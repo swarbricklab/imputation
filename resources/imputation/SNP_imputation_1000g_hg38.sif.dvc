@@ -1,0 +1,12 @@
+md5: 6cc8d0449854cbdd9d1966c2cec254d7
+frozen: true
+deps:
+- path: demuxafy/resources/containers/SNP_imputation_1000g_hg38.sif
+  repo:
+    url: git@github.com:Swarbricklab/references.git
+    rev_lock: 49af0629d422e5181954062682e04417a3e2d4ad
+outs:
+- md5: 23635e83a8231a433a94202d5cbdac41
+  size: 6804840448
+  hash: md5
+  path: SNP_imputation_1000g_hg38.sif
