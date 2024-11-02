@@ -1,0 +1,5 @@
+input_vcf: results/genotyping/combined.vcf
+
+out_dir: results/imputation
+
+log_dir: logs/imputation
