@@ -1,0 +1,7 @@
+input_vcf: test/data/combined.vcf
+
+out_dir: test/results/
+
+log_dir: logs/imputation
+
+container: resources/imputation/container/SNP_imputation_1000g_hg38.sif
