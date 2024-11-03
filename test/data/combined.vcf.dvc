@@ -1,0 +1,12 @@
+md5: 00976473672241b4f87116ed201d94b7
+frozen: true
+deps:
+- path: test/results/combined.vcf
+  repo:
+    url: git@github.com:swarbricklab/genotyping.git
+    rev_lock: f18d1387a8f1ea2f7fe02940ba5329a6c8559548
+outs:
+- md5: 1f26a924efee963e3a2359ab611830b7
+  size: 46027849
+  hash: md5
+  path: combined.vcf
