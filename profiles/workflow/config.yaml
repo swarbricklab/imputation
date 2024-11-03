@@ -1,0 +1,33 @@
+# Workflow profile
+
+# General settings
+verbose: False
+keep-going: True
+rerun-incomplete: True
+latency-wait: 30
+retries: 1
+
+# Conda settings
+use-conda: True
+conda-frontend: mamba
+
+# Resource settings per rule
+set-resources:
+  process_vcf:
+    mem: "4GB"
+    runtime: 5
+  sort_vcf:
+    mem: "4GB"
+    runtime: 5
+  remove_unknowns:
+    mem: "2GB"
+    runtime: 5
+  vcf_reheader:
+    mem: "2GB"
+    runtime: 5
+  generate_sample_psam:
+    mem: "2GB"
+    runtime: 5
+  run_plink:
+    mem: "4GB"
+    runtime: 5
