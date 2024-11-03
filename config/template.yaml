@@ -1,6 +1,6 @@
-input_vcf: results/genotyping/combined.vcf
+input_vcf: test/data/combined.vcf
 
-out_dir: results/imputation
+out_dir: test/results/
 
 log_dir: logs/imputation
 
