@@ -1,0 +1,13 @@
+from pathlib import Path
+import pandas as pd
+
+# Global paths
+out_dir = Path(config['outs']['post_qc_plink']).parent
+logs = Path(config['outs']['logs'])
+
+include: "rules/qc.smk"
+
+rule all:
+    input:
+        post_qc_plink=Path(config['outs']['post_qc_plink'])/"update_sex.psam"
+
