@@ -1,0 +1,12 @@
+md5: 1a0ec1fab269269249d4143b0324abaa
+frozen: true
+deps:
+- path: test/results/id_map.tsv
+  repo:
+    url: git@github.com:swarbricklab/genotyping.git
+    rev_lock: 42e037f9fdd274ce0ec9f1b8f344eba163f4878a
+outs:
+- md5: 67a8a88c9031e742b67015fadfbb681a
+  size: 60
+  hash: md5
+  path: id_map.tsv
