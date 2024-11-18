@@ -5,7 +5,7 @@ verbose: False
 keep-going: True
 rerun-incomplete: True
 latency-wait: 30
-retries: 1
+retries: 0
 
 # Conda settings
 use-conda: True
@@ -13,21 +13,104 @@ conda-frontend: mamba
 
 # Resource settings per rule
 set-resources:
-  process_vcf:
-    mem: "4GB"
-    runtime: 5
   sort_vcf:
     mem: "4GB"
     runtime: 5
   remove_unknowns:
     mem: "2GB"
     runtime: 5
-  vcf_reheader:
-    mem: "2GB"
-    runtime: 5
-  generate_sample_psam:
+  reheader_vcf:
     mem: "2GB"
     runtime: 5
   run_plink:
     mem: "4GB"
     runtime: 5
+  indiv_missingness:
+    mem: "4GB"
+    runtime: 5
+  check_sex:
+    mem: "4GB"
+    runtime: 5
+  find_common_snps:
+    mem: "8GB"
+    runtime: 5
+  extract_common_snps:
+    mem: "4GB"
+    runtime: 5
+  prune_1000g:
+    mem: "4GB"
+    runtime: 5
+  final_pruning:
+    mem: "4GB"
+    runtime: 5
+  pca_1000g:
+    mem: "4GB"
+    runtime: 5
+  pca_project:
+    mem: "4GB"
+    runtime: 5
+  pca_projection_assign:
+    mem: "4GB"
+    runtime: 5
+  separate_indivs:
+    mem: "4GB"
+    runtime: 5
+  update_psam:
+    mem: "4GB"
+    runtime: 5
+  update_sex_ancestry:
+    mem: "4GB"
+    runtime: 5
+  subset_psam_by_ancestry:
+    mem: "2GB"
+    runtime: 5
+  subset_plink_by_ancestry:
+    mem: "4GB"
+    runtime: 5
+  crossmap:
+    mem: "4GB"
+    runtime: 5
+  sort_bed:
+    mem: "4GB"
+    runtime: 5
+  harmonize_hg38:
+    threads: 5
+    mem: "40GB"
+    runtime: 120
+    java_mem: 25
+  plink_to_vcf:
+    threads: 2
+    mem: "2GB"
+    runtime: 5
+  vcf_fixref_hg38:
+    threads: 2
+    mem: "8GB"
+    runtime: 60
+  filter_preimpute_vcf:
+    mem: "2GB"
+    threads: 2
+    runtime: 5
+  het:
+    threads: 2
+    mem: "2GB"
+    runtime: 5
+  het_filter:
+    mem: "1GB"
+    runtime: 5
+  split_by_chr:
+    mem: "2GB"
+    runtime: 5
+  eagle_prephasing:
+    threads: 8
+    runtime: 10
+  minimac_imputation:
+    threads: 5
+    mem: "8GB"
+    runtime: 20
+  combine_vcfs_ancestry:
+    threads: 2
+    runtime: 20
+  combine_vcfs_all:
+    threads: 2
+    mem: "16GB"
+    runtime: 60
