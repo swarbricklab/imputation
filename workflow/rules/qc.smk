@@ -128,9 +128,9 @@ rule extract_common_snps:
         pgen=out_dir/"indiv_missingness/indiv_missingness.pgen",
         pvar=out_dir/"indiv_missingness/indiv_missingness.pvar",
         psam=out_dir/"indiv_missingness/indiv_missingness.psam",
-        pgen_1000g=config['deps']['1000g']['pgen'],
-        pvar_1000g=config['deps']['1000g']['pvar'],
-        psam_1000g=config['deps']['1000g']['psam'],
+        pgen_1000g=config['refs']['1000g']['pgen'],
+        pvar_1000g=config['refs']['1000g']['pvar'],
+        psam_1000g=config['refs']['1000g']['psam'],
         snps_data=out_dir/"common_snps/snps_data.tsv",
         snps_1000g=out_dir/"common_snps/snps_1000g.tsv"
     output:
@@ -178,25 +178,25 @@ rule extract_common_snps:
 
 rule prune_1000g:
     input:
-        bed_1000g = out_dir/"common_snps/subset_1000g.pgen",
-        bim_1000g = out_dir/"common_snps/subset_1000g.pvar",
-        fam_1000g = out_dir/"common_snps/subset_1000g.psam",
-        bim = out_dir/"common_snps/subset_data.pvar",
-        bed = out_dir/"common_snps/subset_data.pgen",
-        fam = out_dir/"common_snps/subset_data.psam",
+        bed_1000g=out_dir/"common_snps/subset_1000g.pgen",
+        bim_1000g=out_dir/"common_snps/subset_1000g.pvar",
+        fam_1000g=out_dir/"common_snps/subset_1000g.psam",
+        bim=out_dir/"common_snps/subset_data.pvar",
+        bed=out_dir/"common_snps/subset_data.pgen",
+        fam=out_dir/"common_snps/subset_data.psam"
     output:
-        prune_out_1000g = out_dir/"common_snps/subset_pruned_1000g.prune.out",
-        prune_out = out_dir/"common_snps/subset_data.prune.out",
-        bed_1000g = out_dir/"common_snps/subset_pruned_1000g.pgen",
-        bim_1000g = out_dir/"common_snps/subset_pruned_1000g.pvar",
-        fam_1000g = out_dir/"common_snps/subset_pruned_1000g.psam",
-        bed = out_dir/"common_snps/subset_pruned_data.pgen",
-        bim = out_dir/"common_snps/subset_pruned_data.pvar",
-        bim_temp = out_dir/"common_snps/subset_pruned_data_temp.pvar",
-        bim_old = out_dir/"common_snps/subset_pruned_data_original.pvar",
-        fam = out_dir/"common_snps/subset_pruned_data.psam",
-        data_1000g_key = out_dir/"common_snps/subset_pruned_data_1000g_key.txt",
-        SNPs2keep = out_dir/"common_snps/SNPs2keep.txt"
+        prune_out_1000g=temp(out_dir/"common_snps/subset_pruned_1000g.prune.out"),
+        prune_out=temp(out_dir/"common_snps/subset_data.prune.out"),
+        bed_1000g=temp(out_dir/"common_snps/subset_pruned_1000g.pgen"),
+        bim_1000g=temp(out_dir/"common_snps/subset_pruned_1000g.pvar"),
+        fam_1000g=temp(out_dir/"common_snps/subset_pruned_1000g.psam"),
+        bed=temp(out_dir/"common_snps/subset_pruned_data.pgen"),
+        bim=temp(out_dir/"common_snps/subset_pruned_data.pvar"),
+        bim_temp=temp(out_dir/"common_snps/subset_pruned_data_temp.pvar"),
+        bim_old=temp(out_dir/"common_snps/subset_pruned_data_original.pvar"),
+        fam=temp(out_dir/"common_snps/subset_pruned_data.psam"),
+        data_1000g_key=temp(out_dir/"common_snps/subset_pruned_data_1000g_key.txt"),
+        SNPs2keep=temp(out_dir/"common_snps/SNPs2keep.txt")
     log:
         logs/"plink/prune_1000g.log"
     container:
@@ -259,9 +259,9 @@ rule final_pruning: ### put in contingency for duplicated snps - remove from bot
         bim=out_dir/"common_snps/subset_pruned_data.pvar",
         fam=out_dir/"common_snps/subset_pruned_data.psam"
     output:
-        bed=out_dir/"common_snps/final_subset_pruned_data.pgen",
-        bim=out_dir/"common_snps/final_subset_pruned_data.pvar",
-        fam=out_dir/"common_snps/final_subset_pruned_data.psam"
+        bed=temp(out_dir/"common_snps/final_subset_pruned_data.pgen"),
+        bim=temp(out_dir/"common_snps/final_subset_pruned_data.pvar"),
+        fam=temp(out_dir/"common_snps/final_subset_pruned_data.psam")
     log:
         logs/"plink/final_pruning.log"
     container:
@@ -283,18 +283,15 @@ rule final_pruning: ### put in contingency for duplicated snps - remove from bot
 ### use PCA from plink for PCA and projection
 rule pca_1000g:
     input:
-        bed_1000g=out_dir/"common_snps/subset_pruned_1000g.pgen",
-        bim_1000g=out_dir/"common_snps/subset_pruned_1000g.pvar",
-        fam_1000g=out_dir/"common_snps/subset_pruned_1000g.psam",
+        pgen_1000g=out_dir/"common_snps/subset_pruned_1000g.pgen",
+        pvar_1000g=out_dir/"common_snps/subset_pruned_1000g.pvar",
+        psam_1000g=out_dir/"common_snps/subset_pruned_1000g.psam",
         bed=out_dir/"common_snps/subset_pruned_data.pgen" 
     output:
-        out = out_dir/"pca_projection/subset_pruned_1000g_pcs.acount",
-        eig_all = out_dir/"pca_projection/subset_pruned_1000g_pcs.eigenvec.allele",
-        eig_vec = out_dir/"pca_projection/subset_pruned_1000g_pcs.eigenvec",
-        eig = out_dir/"pca_projection/subset_pruned_1000g_pcs.eigenval"
-    params:
-        infile = out_dir/"common_snps/subset_pruned_1000g",
-        out = out_dir/"pca_projection/subset_pruned_1000g_pcs"
+        out=temp(out_dir/"pca_projection/subset_pruned_1000g_pcs.acount"),
+        eig_all=temp(out_dir/"pca_projection/subset_pruned_1000g_pcs.eigenvec.allele"),
+        eig_vec=temp(out_dir/"pca_projection/subset_pruned_1000g_pcs.eigenvec"),
+        eig=temp(out_dir/"pca_projection/subset_pruned_1000g_pcs.eigenval")
     log:
         logs/"plink/pca_1000g.log"
     container:
@@ -302,30 +299,32 @@ rule pca_1000g:
     shell:
         """
         eval > {log} 2>&1
+        in_pgen={input.pgen_1000g}
+        in_prefix=${{in_pgen%.pgen}}
+        out_eig={output.eig}
+        out_prefix=${{out_eig%.eigenval}}
         plink2 --threads {threads} \
-            --pfile {params.infile} \
+            --pfile $in_prefix \
             --freq counts \
             --pca allele-wts \
-            --out {params.out}
+            --out $out_prefix
         """
 
 
 ### use plink pca results to plot with R ###
 rule pca_project:
     input:
-        bed = out_dir/"common_snps/final_subset_pruned_data.pgen",
-        bim = out_dir/"common_snps/final_subset_pruned_data.pvar",
-        fam = out_dir/"common_snps/final_subset_pruned_data.psam",
-        frq = out_dir/"pca_projection/subset_pruned_1000g_pcs.acount",
-        scores = out_dir/"pca_projection/subset_pruned_1000g_pcs.eigenvec.allele"
+        pgen=out_dir/"common_snps/final_subset_pruned_data.pgen",
+        pvar=out_dir/"common_snps/final_subset_pruned_data.pvar",
+        psam=out_dir/"common_snps/final_subset_pruned_data.psam",
+        pgen_1000g=out_dir/"common_snps/subset_pruned_1000g.pgen",
+        pvar_1000g=out_dir/"common_snps/subset_pruned_1000g.pvar",
+        psam_1000g=out_dir/"common_snps/subset_pruned_1000g.psam",
+        frq=out_dir/"pca_projection/subset_pruned_1000g_pcs.acount",
+        scores=out_dir/"pca_projection/subset_pruned_1000g_pcs.eigenvec.allele"
     output:
-        projected_scores = out_dir/"pca_projection/final_subset_pruned_data_pcs.sscore",
-        projected_1000g_scores = out_dir/"pca_projection/subset_pruned_1000g_pcs_projected.sscore"
-    params:
-        infile = out_dir/"common_snps/final_subset_pruned_data",
-        infile_1000g = out_dir/"common_snps/subset_pruned_1000g",
-        out = out_dir/"pca_projection/final_subset_pruned_data_pcs",
-        out_1000g = out_dir/"pca_projection/subset_pruned_1000g_pcs_projected"
+        projected_scores=temp(out_dir/"pca_projection/final_subset_pruned_data_pcs.sscore"),
+        projected_1000g_scores=temp(out_dir/"pca_projection/subset_pruned_1000g_pcs_projected.sscore")
     log:
         logs/"plink/pca_project.log"
     container:
@@ -333,17 +332,29 @@ rule pca_project:
     shell:
         """
         eval > {log} 2>&1
+        in_pgen={input.pgen}
+        in_prefix=${{in_pgen%.pgen}}
+        out_scores={output.projected_scores}
+        out_prefix=${{out_scores%.sscore}}
         plink2 --threads {threads} \
-            --pfile {params.infile} \
+            --pfile $in_prefix \
             --read-freq {input.frq} \
             --score {input.scores} 2 5 header-read no-mean-imputation variance-standardize \
             --score-col-nums 6-15 \
-            --out {params.out}
-        plink2 --threads {threads} --pfile {params.infile_1000g} \
+            --out $out_prefix \
+            >> {log} 2>&1
+
+        in_pgen_1000g={input.pgen_1000g}
+        in_prefix_1000g=${{in_pgen_1000g%.pgen}}
+        out_scores_1000g={output.projected_1000g_scores}
+        out_prefix_1000g=${{out_scores_1000g%.sscore}}
+        plink2 --threads {threads} \
+            --pfile $in_prefix_1000g \
             --read-freq {input.frq} \
             --score {input.scores} 2 5 header-read no-mean-imputation variance-standardize \
             --score-col-nums 6-15 \
-            --out {params.out_1000g}
+            --out $out_prefix_1000g \
+            >> {log} 2>&1
        """
 
 rule pca_projection_assign:
@@ -352,39 +363,26 @@ rule pca_projection_assign:
         projected_1000g_scores = out_dir/"pca_projection/subset_pruned_1000g_pcs_projected.sscore",
         fam_1000g = out_dir/"common_snps/subset_1000g.psam",
         psam = out_dir/"plink/plink.psam",
-        sexcheck = out_dir/"check_sex/check_sex.sexcheck.tsv",
+        sexcheck = out_dir/"check_sex/check_sex.sexcheck.tsv"
     output:
-        sexcheck = out_dir/"pca_sex_checks/check_sex_update_remove.tsv",
-        anc_check = out_dir/"pca_sex_checks/ancestry_update_remove.tsv",
-    params:
-        outdir = out_dir/"pca_sex_checks/",
-        script = "/opt/SNP_imputation_1000g_hg38/Imputation/scripts/PCA_Projection_Plotting.R"
+        sexcheck=temp(out_dir/"pca_sex_checks/check_sex_update_remove.tsv"),
+        anc_check=temp(out_dir/"pca_sex_checks/ancestry_update_remove.tsv"),
+        plot=out_dir/"pca_sex_checks/Ancestry_PCAs.png"
     container:
         config['deps']['container']
     log:
-        logs/"imputation/pca_sex_checks/variables.tsv"
-    shell:
-        """
-        echo {params.outdir} > {log}
-        echo {input.projected_scores} >> {log}
-        echo {input.projected_1000g_scores} >> {log}
-        echo {input.fam_1000g} >> {log}
-        echo {input.psam} >> {log}
-        echo {input.sexcheck} >> {log}
-        Rscript {params.script} {log}
-        # Mark ancestry and sex files for update
-        sed -i '1! s/$/UPDATE/' {output.anc_check}
-        sed -i '1! s/$/UPDATE/' {output.sexcheck}
-        """
+        logs/"pca_projection_assign.log"
+    script:
+        "../scripts/PCA_Projection_Plotting.R"
 
 rule separate_indivs:
     input:
-        sexcheck = out_dir/"pca_sex_checks/check_sex_update_remove.tsv",
-        anc_check = out_dir/"pca_sex_checks/ancestry_update_remove.tsv"
+        sexcheck=out_dir/"pca_sex_checks/check_sex_update_remove.tsv",
+        anc_check=out_dir/"pca_sex_checks/ancestry_update_remove.tsv"
     output:
-        update_sex = out_dir/"separate_indivs/sex_update_indivs.tsv",
-        remove_indiv = out_dir/"separate_indivs/remove_indivs.tsv",
-        remove_indiv_temp = out_dir/"separate_indivs/remove_indivs_temp.tsv"
+        update_sex=temp(out_dir/"separate_indivs/sex_update_indivs.tsv"),
+        remove_indiv=temp(out_dir/"separate_indivs/remove_indivs.tsv"),
+        remove_indiv_temp=temp(out_dir/"separate_indivs/remove_indivs_temp.tsv")
     log:
         logs/"plink/separate_indivs.log"
     container:
@@ -411,7 +409,7 @@ rule update_psam:
         sex=out_dir/"pca_sex_checks/check_sex_update_remove.tsv",
         psam=out_dir/"indiv_missingness/indiv_missingness.psam"
     output:
-        anc_updated_psam=out_dir/"pca_sex_checks/updated_psam.psam"
+        anc_updated_psam=temp(out_dir/"pca_sex_checks/updated_psam.psam")
     run:
         # Read input files
         ancestry_check = pd.read_csv(input.ancestry, sep="\t")
@@ -431,34 +429,47 @@ rule update_psam:
         # Write updated PSAM to output file
         updated_psam.to_csv(output.anc_updated_psam, sep="\t", na_rep="NA", index=False)
 
+rule prepare_update:
+    input:
+        pgen=out_dir/"indiv_missingness/indiv_missingness.pgen",
+        pvar=out_dir/"indiv_missingness/indiv_missingness.pvar",
+        anc_updated_psam=out_dir/"pca_sex_checks/updated_psam.psam"
+    output:
+        pgen=out_dir/"update_prep/update_prep.pgen",
+        pvar=out_dir/"update_prep/update_prep.pvar",
+        psam=out_dir/"update_prep/update_prep.psam"
+    shell:
+        """
+        cp {input.pgen} {output.pgen}
+        cp {input.pvar} {output.pvar}
+        cp {input.anc_updated_psam} {output.psam}
+        """
+
 rule update_sex_ancestry:
     input:
-        bim = out_dir/"indiv_missingness/indiv_missingness.pgen",
-        psam = out_dir/"plink/plink.psam",
-        update_sex = out_dir/"separate_indivs/sex_update_indivs.tsv",
-        remove_indiv = out_dir/"separate_indivs/remove_indivs.tsv",
-        anc_updated_psam = out_dir/"pca_sex_checks/updated_psam.psam"
+        pgen=out_dir/"update_prep/update_prep.pgen",
+        pvar=out_dir/"update_prep/update_prep.pvar",
+        psam=out_dir/"update_prep/update_prep.psam",
+        update_sex=out_dir/"separate_indivs/sex_update_indivs.tsv",
+        remove_indiv=out_dir/"separate_indivs/remove_indivs.tsv",
     output:
-        bed = out_dir/"update_sex_ancestry/update_sex.pgen",
-        bim = out_dir/"update_sex_ancestry/update_sex.pvar",
-        psam = out_dir/"update_sex_ancestry/update_sex.psam"
-    params:
-        infile = out_dir/"indiv_missingness/indiv_missingness",
-        psam_temp = out_dir/"update_sex_ancestry/temp/indiv_missingness.psam_temp",
-        tdir = out_dir/"update_sex_ancestry/temp/",
-        out = out_dir/"update_sex_ancestry/update_sex"
+        pgen=out_dir/"update_sex_ancestry/update_sex.pgen",
+        pvar=out_dir/"update_sex_ancestry/update_sex.pvar",
+        psam=out_dir/"update_sex_ancestry/update_sex.psam"
     container:
         config['deps']['container']
     shell:
         """
-        mkdir -p {params.tdir}
-        cp {params.infile}* {params.tdir}
-        cp {input.anc_updated_psam} {params.tdir}/indiv_missingness.psam 
+        in_pgen={input.pgen}
+        in_prefix=${{in_pgen%.pgen}}
+        out_pgen={output.pgen}
+        out_prefix=${{out_pgen%.pgen}}
+
         plink2 --threads {threads} \
-            --pfile {params.tdir}/indiv_missingness \
+            --pfile $in_prefix \
             --update-sex {input.update_sex} \
             --remove {input.remove_indiv} \
             --make-pgen 'psam-cols='fid,parents,sex,phenos \
-            --out {params.out}
+            --out $out_prefix
         """
 
