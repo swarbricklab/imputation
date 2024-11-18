@@ -1,12 +1,12 @@
 
 deps:
-  input_vcf: test/data/test.hg19.vcf
-  input_psam: test/data/test.psam
-  id_map: test/data/id_map.tsv
+  input_vcf: data/genotyping/combined.hg19.vcf
+  input_psam: data/genotyping/combined.psam
+  id_map: data/genotyping/id_map.tsv
   container: resources/imputation/SNP_imputation_1000g_hg38.sif
 
 outs:
-  post_qc_plink: test/results/qc/update_sex_ancestry
+  post_qc_plink: data/imputation/post-qc
   logs: logs/imputation/qc
   
 refs:

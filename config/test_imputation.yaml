@@ -1,0 +1,24 @@
+deps:
+  post_qc_plink: "data/imputation/post-qc"
+  id_map: "data/genotyping/id_map.tsv"
+  container: "resources/imputation/SNP_imputation_1000g_hg38.sif"
+
+outs:
+  results: "data/imputation"
+  logs: "logs/imputation"
+
+refs:
+  vcf: "resources/genomes/hg38/ref_panel_QC/30x-GRCh38_NoSamplesSorted.vcf.gz"
+  hg38_fa: "resources/genomes/hg38/ref_genome_QC/Homo_sapiens.GRCh38.dna.primary_assembly.fa"
+  genetic_map: "resources/genomes/hg38/phasing/genetic_map/genetic_map_hg38_withX.txt.gz"
+  phasing: "resources/genomes/hg38/phasing/phasing_reference/"
+  impute: "resources/reference/hg38/imputation"
+
+params:
+    # the minimum proportion that can be missing for a snp to be included (5% by default)
+    snp_missing_pct: 0.05
+    # the threshold used for calling a SNP outside of HWE
+    snp_hwe: 1e-6
+    # length in Mb for minimac4 imputation chunks (20 by default)
+    chunk_length: 40
+    maf: 0.0
