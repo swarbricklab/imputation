@@ -435,9 +435,9 @@ rule prepare_update:
         pvar=out_dir/"indiv_missingness/indiv_missingness.pvar",
         anc_updated_psam=out_dir/"pca_sex_checks/updated_psam.psam"
     output:
-        pgen=out_dir/"update_prep/update_prep.pgen",
-        pvar=out_dir/"update_prep/update_prep.pvar",
-        psam=out_dir/"update_prep/update_prep.psam"
+        pgen=temp(out_dir/"update_prep/update_prep.pgen"),
+        pvar=temp(out_dir/"update_prep/update_prep.pvar"),
+        psam=temp(out_dir/"update_prep/update_prep.psam")
     shell:
         """
         cp {input.pgen} {output.pgen}
