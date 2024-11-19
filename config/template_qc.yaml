@@ -11,9 +11,9 @@ outs:
   
 refs:
   1000g:
-    pgen: "resources/1000G/all_phase3_filtered.pgen"
-    pvar: "resources/1000G/all_phase3_filtered.pvar"
-    psam: "resources/1000G/all_phase3_filtered.psam"
+    pgen: "resources/1000g/all_phase3_filtered.pgen"
+    pvar: "resources/1000g/all_phase3_filtered.pvar"
+    psam: "resources/1000g/all_phase3_filtered.psam"
 
 params:
   indiv_missingness_mind: 0.05

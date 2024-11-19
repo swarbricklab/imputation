@@ -110,7 +110,7 @@ rule check_sex:
 rule find_common_snps:
     input:
         pvar=out_dir/"indiv_missingness/indiv_missingness.pvar",
-        pvar_1000g="resources/1000G/all_phase3_filtered.pvar"
+        pvar_1000g=config['refs']['1000g']['pvar']
     output:
         snps_data=temp(out_dir/"common_snps/snps_data.tsv"),
         snps_1000g=temp(out_dir/"common_snps/snps_1000g.tsv")
