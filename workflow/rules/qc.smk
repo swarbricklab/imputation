@@ -185,6 +185,7 @@ rule prune_1000g:
         bed=out_dir/"common_snps/subset_data.pgen",
         fam=out_dir/"common_snps/subset_data.psam"
     output:
+        prune_in_1000t=temp(out_dir/"common_snps/subset_pruned_1000g.prune.in"),
         prune_out_1000g=temp(out_dir/"common_snps/subset_pruned_1000g.prune.out"),
         prune_out=temp(out_dir/"common_snps/subset_data.prune.out"),
         bed_1000g=temp(out_dir/"common_snps/subset_pruned_1000g.pgen"),
