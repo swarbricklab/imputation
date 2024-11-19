@@ -1,0 +1,13 @@
+md5: f454a4f75ee1be6a59ae4bafe7dea980
+frozen: true
+deps:
+- path: 1000g
+  repo:
+    url: git@github.com:Swarbricklab/references.git
+    rev_lock: 27326fe8563e5831fb181ecb624c89cb5842ed9d
+outs:
+- md5: 33fd1e204422821fa4fef3d8e767e187.dir
+  size: 4691275242
+  nfiles: 3
+  hash: md5
+  path: 1000g
