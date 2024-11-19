@@ -453,9 +453,9 @@ rule update_sex_ancestry:
         update_sex=out_dir/"separate_indivs/sex_update_indivs.tsv",
         remove_indiv=out_dir/"separate_indivs/remove_indivs.tsv",
     output:
-        pgen=out_dir/"update_sex_ancestry/update_sex.pgen",
-        pvar=out_dir/"update_sex_ancestry/update_sex.pvar",
-        psam=out_dir/"update_sex_ancestry/update_sex.psam"
+        pgen=final/"post_qc.pgen",
+        pvar=final/"post_qc.pvar",
+        psam=final/"post_qc.psam"
     container:
         config['deps']['container']
     shell:
