@@ -1,6 +1,6 @@
 rule subset_psam_by_ancestry:
     input:
-        psam = out_dir/"update_sex_ancestry/update_sex.psam"
+        psam=post_qc_plink/"post_qc.psam"
     output:
         keep=temp(out_dir/"subset_ancestry/{ancestry}_individuals.psam")
     shell:
@@ -11,9 +11,9 @@ rule subset_psam_by_ancestry:
 rule subset_plink_by_ancestry:
     input:
         keep=out_dir/"subset_ancestry/{ancestry}_individuals.psam",
-        pgen=out_dir/"update_sex_ancestry/update_sex.pgen",
-        psam=out_dir/"update_sex_ancestry/update_sex.psam",
-        pvar=out_dir/"update_sex_ancestry/update_sex.pvar"
+        pgen=post_qc_plink/"post_qc.pgen",
+        psam=post_qc_plink/"post_qc.psam",
+        pvar=post_qc_plink/"post_qc.pvar"
     output:
         pgen = out_dir/"subset_ancestry/{ancestry}_subset.pgen",
         psam = out_dir/"subset_ancestry/{ancestry}_subset.psam",
