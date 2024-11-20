@@ -1,0 +1,4 @@
+[core]
+    remote = gadi-imputation
+['remote "gadi-imputation"']
+    url = ssh://gadi-dm.nci.org.au/g/data/a56/dvc/workflows/imputation
