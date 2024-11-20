@@ -1,0 +1,6 @@
+outs:
+- md5: b9633b5d6242e95f3e651be7d903ab31.dir
+  size: 3151432687
+  nfiles: 3
+  hash: md5
+  path: refdata-cellranger-GRCh38-3.0.0
