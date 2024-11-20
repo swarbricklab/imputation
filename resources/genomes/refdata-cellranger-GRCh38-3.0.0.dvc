@@ -1,3 +1,10 @@
+md5: 6fd926400a5e7576c47d67558741a136
+frozen: true
+deps:
+- path: demuxafy/resources/genomes/refdata-cellranger-GRCh38-3.0.0
+  repo:
+    url: git@github.com:Swarbricklab/references.git
+    rev_lock: 27326fe8563e5831fb181ecb624c89cb5842ed9d
 outs:
 - md5: b9633b5d6242e95f3e651be7d903ab31.dir
   size: 3151432687
