@@ -18,7 +18,7 @@ rule reheader_vcf:
 rule run_plink:
     input:
         psam=config['deps']['input_psam'], 
-        vcf=out_dir/"vcf/reheader.hg19.vcf"
+        vcf=rules.reheader_vcf.output.vcf
     output: 
         psam=temp(out_dir/"plink/plink.psam"),
         pgen=temp(out_dir/"plink/plink.pgen"),
@@ -36,14 +36,15 @@ rule run_plink:
             --make-pgen 'psam-cols='fid,parents,sex,phenos \
             --out $plink_prefix \
             --psam {input.psam} \
-            --sort-vars > {log} 2>&1
+            --sort-vars
+        mv ${{plink_prefix}}.log {log}
         """
 
 rule indiv_missingness:
     input:
-        psam=out_dir/"plink/plink.psam",
-        pgen=out_dir/"plink/plink.pgen",
-        pvar=out_dir/"plink/plink.pvar"
+        psam=rules.run_plink.output.psam,
+        pgen=rules.run_plink.output.pgen,
+        pvar=rules.run_plink.output.pvar
     output:
         pgen=temp(out_dir/"indiv_missingness/indiv_missingness.pgen"),
         pvar=temp(out_dir/"indiv_missingness/indiv_missingness.pvar"),
@@ -64,15 +65,15 @@ rule indiv_missingness:
             --pfile $in_prefix \
             --make-pgen 'psam-cols='fid,parents,sex,phenos \
             --mind {params.mind} \
-            --out $out_prefix \
-            > {log} 2>&1
+            --out $out_prefix
+        mv ${{out_prefix}}.log {log}
         """
 
 rule check_sex:
     input:
-        pgen=out_dir/"indiv_missingness/indiv_missingness.pgen",
-        pvar=out_dir/"indiv_missingness/indiv_missingness.pvar",
-        psam=out_dir/"indiv_missingness/indiv_missingness.psam"
+        pgen=rules.indiv_missingness.output.pgen,
+        pvar=rules.indiv_missingness.output.pvar,
+        psam=rules.indiv_missingness.output.psam
     output:
         bed=temp(out_dir/"check_sex/check_sex.bed"),
         bim=temp(out_dir/"check_sex/check_sex.bim"),
@@ -94,15 +95,16 @@ rule check_sex:
             --pfile $in_prefix \
             --make-bed \
             --max-alleles 2 \
-            --out $out_prefix \
-            > {log} 2>&1
+            --out $out_prefix
+        mv ${{out_prefix}}.log {log}
 
         plink --threads {threads} \
             --bfile $out_prefix \
             --check-sex \
             --biallelic-only strict \
-            --out $out_prefix \
-            >> {log} 2>&1
+            --out $out_prefix
+        cat ${{out_prefix}}.log >> {log}
+        rm ${{out_prefix}}.log
 
         awk '{{$1=$1}}1' OFS="\t" {output.sexcheck} > {output.sexcheck_tsv}
         """
@@ -125,9 +127,9 @@ rule find_common_snps:
 
 rule extract_common_snps:
     input:
-        pgen=out_dir/"indiv_missingness/indiv_missingness.pgen",
-        pvar=out_dir/"indiv_missingness/indiv_missingness.pvar",
-        psam=out_dir/"indiv_missingness/indiv_missingness.psam",
+        pgen=rules.indiv_missingness.output.pgen,
+        pvar=rules.indiv_missingness.output.pvar,
+        psam=rules.indiv_missingness.output.psam,
         pgen_1000g=config['refs']['1000g']['pgen'],
         pvar_1000g=config['refs']['1000g']['pvar'],
         psam_1000g=config['refs']['1000g']['psam'],
@@ -160,6 +162,7 @@ rule extract_common_snps:
             --make-pgen 'psam-cols='fid,parents,sex,phenos \
             --out $out_prefix"
         echo $cmd; eval $cmd
+        rm ${{out_prefix}}.log
 
         in_pgen_1000g={input.pgen_1000g}
         in_prefix_1000g=${{in_pgen_1000g%.pgen}}
@@ -174,6 +177,7 @@ rule extract_common_snps:
             --make-pgen \
             --out $out_prefix_1000g"
         echo $cmd; eval $cmd
+        rm ${{out_prefix_1000g}}.log
         """
 
 rule prune_1000g:
@@ -214,12 +218,14 @@ rule prune_1000g:
             --pfile $in_prefix_1000g \
             --indep-pairwise 50 5 0.5 \
             --out $out_prefix_1000g
+        rm ${{out_prefix_1000g}}.log
 
         plink2 --threads {threads} \
             --pfile $in_prefix_1000g \
             --extract {output.prune_out_1000g} \
             --make-pgen \
             --out $out_prefix_1000g
+        rm ${{out_prefix_1000g}}.log
 
         if [[ $(grep "##" {input.bim} | wc -l) > 0 ]]
         then
@@ -242,6 +248,7 @@ rule prune_1000g:
             --extract {output.prune_out} \
             --make-pgen 'psam-cols='fid,parents,sex,phenos \
             --out $out_prefix
+        rm ${{out_prefix}}.log
     
         cp {output.bim} {output.bim_old}
         grep -v "#" {output.bim_old} \
@@ -269,7 +276,6 @@ rule final_pruning: ### put in contingency for duplicated snps - remove from bot
         config['deps']['container']
     shell:
         """
-        eval > {log} 2>&1
         in_pgen={input.bed}
         in_prefix=${{in_pgen%.pgen}}
         out_pgen={output.bed}
@@ -279,6 +285,7 @@ rule final_pruning: ### put in contingency for duplicated snps - remove from bot
             --pfile $in_prefix \
             --make-pgen 'psam-cols='fid,parents,sex,phenos \
             --out $out_prefix
+        mv ${{out_prefix}}.log {log}
         """
 
 ### use PCA from plink for PCA and projection
@@ -299,7 +306,6 @@ rule pca_1000g:
         config['deps']['container']
     shell:
         """
-        eval > {log} 2>&1
         in_pgen={input.pgen_1000g}
         in_prefix=${{in_pgen%.pgen}}
         out_eig={output.eig}
@@ -309,8 +315,8 @@ rule pca_1000g:
             --freq counts \
             --pca allele-wts \
             --out $out_prefix
+        mv ${{out_prefix}}.log {log}
         """
-
 
 ### use plink pca results to plot with R ###
 rule pca_project:
@@ -332,7 +338,6 @@ rule pca_project:
         config['deps']['container']
     shell:
         """
-        eval > {log} 2>&1
         in_pgen={input.pgen}
         in_prefix=${{in_pgen%.pgen}}
         out_scores={output.projected_scores}
@@ -342,8 +347,8 @@ rule pca_project:
             --read-freq {input.frq} \
             --score {input.scores} 2 5 header-read no-mean-imputation variance-standardize \
             --score-col-nums 6-15 \
-            --out $out_prefix \
-            >> {log} 2>&1
+            --out $out_prefix
+        mv ${{out_prefix}}.log {log}
 
         in_pgen_1000g={input.pgen_1000g}
         in_prefix_1000g=${{in_pgen_1000g%.pgen}}
@@ -354,8 +359,9 @@ rule pca_project:
             --read-freq {input.frq} \
             --score {input.scores} 2 5 header-read no-mean-imputation variance-standardize \
             --score-col-nums 6-15 \
-            --out $out_prefix_1000g \
-            >> {log} 2>&1
+            --out $out_prefix_1000g
+        cat ${{out_prefix_1000g}}.log >> {log}
+        rm ${{out_prefix_1000g}}.log
        """
 
 rule pca_projection_assign:
@@ -457,6 +463,8 @@ rule update_sex_ancestry:
         pgen=final/"post_qc.pgen",
         pvar=final/"post_qc.pvar",
         psam=final/"post_qc.psam"
+    log:
+        logs/"update_sex_ancestry.log"
     container:
         config['deps']['container']
     shell:
@@ -472,5 +480,6 @@ rule update_sex_ancestry:
             --remove {input.remove_indiv} \
             --make-pgen 'psam-cols='fid,parents,sex,phenos \
             --out $out_prefix
+        mv ${{out_prefix}}.log {log}
         """
 

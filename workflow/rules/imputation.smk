@@ -15,11 +15,11 @@ rule subset_plink_by_ancestry:
         psam=post_qc_plink/"post_qc.psam",
         pvar=post_qc_plink/"post_qc.pvar"
     output:
-        pgen = out_dir/"subset_ancestry/{ancestry}_subset.pgen",
-        psam = out_dir/"subset_ancestry/{ancestry}_subset.psam",
-        pvar = out_dir/"subset_ancestry/{ancestry}_subset.pvar"
+        pgen=temp(out_dir/"subset_ancestry/{ancestry}_subset.pgen"),
+        psam=temp(out_dir/"subset_ancestry/{ancestry}_subset.psam"),
+        pvar=temp(out_dir/"subset_ancestry/{ancestry}_subset.pvar")
     log:
-        logs/"subset_plink_by_ancestry_{ancestry}.log"
+        logs/"subset_plink_by_ancestry/subset_{ancestry}.log"
     container:
         config['deps']['container']
     shell:
@@ -34,8 +34,8 @@ rule subset_plink_by_ancestry:
             --keep {input.keep}  \
             --max-alleles 2 \
             --make-pgen 'psam-cols='fid,parents,sex,phenos \
-            --out $out_prefix \
-            > {log} 2>&1
+            --out $out_prefix
+        mv ${{out_prefix}}.log {log}
         """
 
 # Converts BIM to BED and converts the BED file via CrossMap.
@@ -47,16 +47,19 @@ rule crossmap:
         psam = out_dir/"subset_ancestry/{ancestry}_subset.psam",
         pvar = out_dir/"subset_ancestry/{ancestry}_subset.pvar"
     output:
-        bed = out_dir/"crossmapped/{ancestry}_crossmapped_plink.bed",
-        bim = out_dir/"crossmapped/{ancestry}_crossmapped_plink.bim",
-        fam = out_dir/"crossmapped/{ancestry}_crossmapped_plink.fam",
-        inbed = out_dir/"crossmapped/{ancestry}_crossmap_input.bed",
-        outbed = out_dir/"crossmapped/{ancestry}_crossmap_output.bed",
-        excluded_ids = out_dir/"crossmapped/{ancestry}_excluded_ids.txt"
+        bed=temp(out_dir/"crossmapped/{ancestry}_crossmapped_plink.bed"),
+        bim=temp(out_dir/"crossmapped/{ancestry}_crossmapped_plink.bim"),
+        fam=temp(out_dir/"crossmapped/{ancestry}_crossmapped_plink.fam"),
+        inbed=temp(out_dir/"crossmapped/{ancestry}_crossmap_input.bed"),
+        outbed=temp(out_dir/"crossmapped/{ancestry}_crossmap_output.bed"),
+        excluded_ids=temp(out_dir/"crossmapped/{ancestry}_excluded_ids.txt"),
+        unmap=temp(out_dir/"crossmapped/{ancestry}_crossmap_output.bed.unmap")
     params:
         chain_file = "/opt/GRCh37_to_GRCh38.chain"
     container:
         config['deps']['container']
+    log:
+        logs/"crossmap/crossmap_{ancestry}.log"
     shell:
         """
         awk 'BEGIN{{FS=OFS="\t"}}{{print $1,$2,$2+1,$3,$4,$5}}' {input.pvar} > {output.inbed}
@@ -73,6 +76,7 @@ rule crossmap:
             --make-bed \
             --output-chr MT \
             --out $out_prefix
+        mv ${{out_prefix}}.log {log}
 
         awk -F'\t' 'BEGIN {{OFS=FS}} {{print $1,$4,0,$2,$6,$5}}' {output.outbed} > {output.bim}
         """
@@ -83,11 +87,11 @@ rule sort_bed:
         bim=out_dir/"crossmapped/{ancestry}_crossmapped_plink.bim",
         fam=out_dir/"crossmapped/{ancestry}_crossmapped_plink.fam"
     output:
-        bed=out_dir/"crossmapped_sorted/{ancestry}_crossmapped_sorted.bed",
-        bim=out_dir/"crossmapped_sorted/{ancestry}_crossmapped_sorted.bim",
-        fam=out_dir/"crossmapped_sorted/{ancestry}_crossmapped_sorted.fam"
+        bed=temp(out_dir/"crossmapped_sorted/{ancestry}_crossmapped_sorted.bed"),
+        bim=temp(out_dir/"crossmapped_sorted/{ancestry}_crossmapped_sorted.bim"),
+        fam=temp(out_dir/"crossmapped_sorted/{ancestry}_crossmapped_sorted.fam")
     log:
-        logs/"sort_bed_{ancestry}.log"
+        logs/"sort_bed/sort_bed_{ancestry}.log"
     container:
         config['deps']['container']
     shell:
@@ -101,8 +105,8 @@ rule sort_bed:
             --make-bed \
             --max-alleles 2 \
             --output-chr MT \
-            --out $out_prefix \
-            > {log} 2>&1
+            --out $out_prefix
+        mv ${{out_prefix}}.log {log}
         """
 
 
@@ -114,13 +118,15 @@ rule harmonize_hg38:
         vcf=config['refs']['vcf'],
         index=config['refs']['vcf'] + ".tbi"
     output:
-        bed=out_dir/"harmonize_hg38/{ancestry}.bed",
-        bim=out_dir/"harmonize_hg38/{ancestry}.bim",
-        fam=out_dir/"harmonize_hg38/{ancestry}.fam"
+        bed=temp(out_dir/"harmonize_hg38/{ancestry}.bed"),
+        bim=temp(out_dir/"harmonize_hg38/{ancestry}.bim"),
+        fam=temp(out_dir/"harmonize_hg38/{ancestry}.fam"),
+        updates=temp(out_dir/"harmonize_hg38/{ancestry}_idUpdates.txt")
     params:
         jar = "/opt/GenotypeHarmonizer-1.4.23/GenotypeHarmonizer.jar"
     log:
-        logs/"harmonize_hg38_{ancestry}.log"
+        harmonizer=logs/"harmonize_hg38/harmonize_hg38_{ancestry}.log",
+        snp_log=logs/"harmonize_hg38/snpLog_{ancestry}.log"
     container:
         config['deps']['container']
     shell:
@@ -137,7 +143,8 @@ rule harmonize_hg38:
             --refType VCF \
             --update-id \
             --output $out_prefix
-            > {log} 2>&1
+        mv $(dirname $out_bed)/{wildcards.ancestry}.log {log.harmonizer}
+        mv $(dirname $out_bed)/{wildcards.ancestry}_snpLog.log {log.snp_log}
         """
 
 rule plink_to_vcf:
@@ -146,8 +153,8 @@ rule plink_to_vcf:
         bim=out_dir/"harmonize_hg38/{ancestry}.bim",
         fam=out_dir/"harmonize_hg38/{ancestry}.fam"
     output:
-        vcf=out_dir/"harmonize_hg38/{ancestry}_harmonised_hg38.vcf.gz",
-        index=out_dir/"harmonize_hg38/{ancestry}_harmonised_hg38.vcf.gz.csi"
+        vcf=temp(out_dir/"harmonize_hg38/{ancestry}_harmonised_hg38.vcf.gz"),
+        index=temp(out_dir/"harmonize_hg38/{ancestry}_harmonised_hg38.vcf.gz.csi")
     log:
         logs/"plink_to_vcf_{ancestry}.log"
     container:
@@ -162,8 +169,9 @@ rule plink_to_vcf:
         plink2 --bfile $in_prefix \
             --recode vcf id-paste=iid \
             --chr 1-22 \
-            --out $out_prefix \
-            > {log} 2>&1
+            --out $out_prefix
+
+        mv ${{out_prefix}}.log {log}
 
         bgzip ${{out_prefix}}.vcf
         bcftools index {output.vcf}
@@ -176,35 +184,40 @@ rule vcf_fixref_hg38:
         index=config['refs']['vcf'] + ".tbi",
         data_vcf=out_dir/"harmonize_hg38/{ancestry}_harmonised_hg38.vcf.gz"
     output:
-        vcf=out_dir/"vcf_fixref_hg38/{ancestry}_fixref_hg38.vcf.gz",
-        index=out_dir/"vcf_fixref_hg38/{ancestry}_fixref_hg38.vcf.gz.csi"
+        vcf=temp(out_dir/"vcf_fixref_hg38/{ancestry}_fixref_hg38.vcf.gz"),
+        index=temp(out_dir/"vcf_fixref_hg38/{ancestry}_fixref_hg38.vcf.gz.csi")
+    log:
+        logs/"vcf_fixref_hg38/fixref_{ancestry}.log"
     container:
         config['deps']['container']
     shell:
         """
         bcftools +fixref {input.data_vcf} -- -f {input.fasta} -i {input.vcf} \
-            | bcftools norm --check-ref x -f {input.fasta} -Oz -o {output.vcf}
-        bcftools index {output.vcf}
+            | bcftools norm --check-ref x -f {input.fasta} -Oz -o {output.vcf} \
+            2> {log}
+        bcftools index {output.vcf} 2>> {log}
         """
 
 rule filter_preimpute_vcf:
     input:
         vcf=out_dir/"vcf_fixref_hg38/{ancestry}_fixref_hg38.vcf.gz"
     output:
-        tagged_vcf=out_dir/"filter_preimpute_vcf/{ancestry}_tagged.vcf.gz",
-        filtered_vcf=out_dir/"filter_preimpute_vcf/{ancestry}_filtered.vcf.gz",
-        filtered_index=out_dir/"filter_preimpute_vcf/{ancestry}_filtered.vcf.gz.csi"
+        tagged_vcf=temp(out_dir/"filter_preimpute_vcf/{ancestry}_tagged.vcf.gz"),
+        filtered_vcf=temp(out_dir/"filter_preimpute_vcf/{ancestry}_filtered.vcf.gz"),
+        filtered_index=temp(out_dir/"filter_preimpute_vcf/{ancestry}_filtered.vcf.gz.csi")
     params:
         maf=config['params']['maf'],
         missing=config["params"]["snp_missing_pct"],
         hwe=config["params"]["snp_hwe"]
+    log:
+        logs/"filter_preimpute_vcf/filter_{ancestry}.log"
     container:
         config['deps']['container']
     shell:
         """
         #Add tags
         export BCFTOOLS_PLUGINS=/opt/bcftools-1.10.2/plugins
-        bcftools +fill-tags {input.vcf} -Oz -o {output.tagged_vcf}
+        bcftools +fill-tags {input.vcf} -Oz -o {output.tagged_vcf} 2> {log}
 
         #Filter rare and non-HWE variants and those with abnormal alleles and duplicates
         bcftools filter -i 'INFO/HWE > {params.hwe} & F_MISSING < {params.missing} & MAF[0] > {params.maf}' {output.tagged_vcf} \
@@ -212,10 +225,11 @@ rule filter_preimpute_vcf:
             | bcftools filter -e "ALT='.'" \
             | bcftools norm -d all \
             | bcftools norm -m+any \
-            | bcftools view -m2 -M2 -Oz -o {output.filtered_vcf}
+            | bcftools view -m2 -M2 -Oz -o {output.filtered_vcf} \
+            2>> {log}
 
         #Index the output file
-        bcftools index {output.filtered_vcf}
+        bcftools index {output.filtered_vcf} 2>> {log}
         """
 
 rule het:
@@ -223,10 +237,10 @@ rule het:
         vcf=out_dir/"filter_preimpute_vcf/{ancestry}_filtered.vcf.gz",
     output:
         tmp_vcf=temp(out_dir/"het/{ancestry}_filtered_temp.vcf"),
-        inds=out_dir/"het/{ancestry}_het_failed.inds",
-        het=out_dir/"het/{ancestry}_het.het",
-        passed=out_dir/"het/{ancestry}_het_passed.inds",
-        passed_list=out_dir/"het/{ancestry}_het_passed.txt"
+        inds=temp(out_dir/"het/{ancestry}_het_failed.inds"),
+        het=temp(out_dir/"het/{ancestry}_het.het"),
+        passed=temp(out_dir/"het/{ancestry}_het_passed.inds"),
+        passed_list=temp(out_dir/"het/{ancestry}_het_passed.txt")
     params:
         script="/opt/SNP_imputation_1000g_hg38/Imputation/scripts/filter_het.R"
     container:
@@ -247,16 +261,18 @@ rule het_filter:
         passed_list=out_dir/"het/{ancestry}_het_passed.txt",
         vcf=out_dir/"filter_preimpute_vcf/{ancestry}_filtered.vcf.gz"
     output:
-        vcf=out_dir/"het_filter/{ancestry}_het_filtered.vcf.gz",
-        index=out_dir/"het_filter/{ancestry}_het_filtered.vcf.gz.csi"
+        vcf=temp(out_dir/"het_filter/{ancestry}_het_filtered.vcf.gz"),
+        index=temp(out_dir/"het_filter/{ancestry}_het_filtered.vcf.gz.csi")
+    log:
+        logs/"het_filter/het_filter_{ancestry}.log"
     container:
         config['deps']['container']
     shell:
         """
-        bcftools view -S {input.passed_list} {input.vcf} -Oz -o {output.vcf}
+        bcftools view -S {input.passed_list} {input.vcf} -Oz -o {output.vcf} 2> {log}
 
         #Index the output file
-        bcftools index {output.vcf}
+        bcftools index {output.vcf} 2>> {log}
         """
 
 rule calculate_missingness:
@@ -265,8 +281,10 @@ rule calculate_missingness:
         filtered_index=out_dir/"het_filter/{ancestry}_het_filtered.vcf.gz.csi"
     output:
         tmp_vcf=temp(out_dir/"filter_preimpute_vcf/{ancestry}_het_filtered.vcf"),
-        miss=out_dir/"filter_preimpute_vcf/{ancestry}_genotypes.imiss",
-        individuals=out_dir/"genotype_donor_annotation/{ancestry}_individuals.tsv"
+        miss=temp(out_dir/"filter_preimpute_vcf/{ancestry}_genotypes.imiss"),
+        individuals=temp(out_dir/"genotype_donor_annotation/{ancestry}_individuals.tsv")
+    log:
+        logs/"calculate_missingness/missingness_{ancestry}.log"
     container:
         config['deps']['container']
     shell:
@@ -277,33 +295,38 @@ rule calculate_missingness:
 
         out_miss={output.miss}
         out_prefix=${{out_miss%.imiss}}
-        vcftools --gzvcf {output.tmp_vcf} --missing-indv --out $out_prefix
+        vcftools --gzvcf {output.tmp_vcf} --missing-indv --out $out_prefix 2> {log}
 
-        bcftools query -l {input.filtered_vcf} >> {output.individuals}
+        bcftools query -l {input.filtered_vcf} >> {output.individuals} 2>> {log}
         """
 
 rule split_by_chr:
     input:
-        filtered_vcf = out_dir/"het_filter/{ancestry}_het_filtered.vcf.gz",
-        filtered_index = out_dir/"het_filter/{ancestry}_het_filtered.vcf.gz.csi"
+        filtered_vcf=out_dir/"het_filter/{ancestry}_het_filtered.vcf.gz",
+        filtered_index=out_dir/"het_filter/{ancestry}_het_filtered.vcf.gz.csi"
     output:
-        vcf = out_dir/"split_by_chr/{ancestry}_chr_{chr}.vcf.gz",
-        index = out_dir/"split_by_chr/{ancestry}_chr_{chr}.vcf.gz.csi"
+        vcf=temp(out_dir/"split_by_chr/{ancestry}_chr_{chr}.vcf.gz"),
+        index=temp(out_dir/"split_by_chr/{ancestry}_chr_{chr}.vcf.gz.csi")
+    log:
+        logs/"split_by_chr/split_{ancestry}_chr{chr}.log"
     container:
         config['deps']['container']
     shell:
         """
-        bcftools view -r {wildcards.chr} {input.filtered_vcf} -Oz -o {output.vcf}
-        bcftools index {output.vcf}
+        bcftools view -r {wildcards.chr} {input.filtered_vcf} -Oz -o {output.vcf} 2> {log}
+        bcftools index {output.vcf} 2>> {log} 
         """
 
 rule eagle_prephasing:
     input:
-        vcf = out_dir/"split_by_chr/{ancestry}_chr_{chr}.vcf.gz",
+        vcf=rules.split_by_chr.output.vcf,
+        index=rules.split_by_chr.output.index,
         map_file = config['refs']['genetic_map'],
         phasing_file = config['refs']['phasing'] + "chr{chr}.bcf"
     output:
-        vcf = out_dir/"eagle_prephasing/{ancestry}_chr{chr}_phased.vcf.gz"
+        vcf=temp(out_dir/"eagle_prephasing/{ancestry}_chr{chr}_phased.vcf.gz")
+    log:
+        logs/"eagle/eagle_prephasing_{ancestry}_chr{chr}.log"
     container:
         config['deps']['container']
     shell:
@@ -315,7 +338,8 @@ rule eagle_prephasing:
             --geneticMapFile={input.map_file} \
             --chrom={wildcards.chr} \
             --outPrefix=$out_prefix \
-            --numThreads={threads}
+            --numThreads={threads} \
+            > {log} 2>&1
         """
 
 rule minimac_imputation:
@@ -323,10 +347,13 @@ rule minimac_imputation:
         vcf=out_dir/"eagle_prephasing/{ancestry}_chr{chr}_phased.vcf.gz",
         impute_file=config['refs']['impute'] + "/chr{chr}.m3vcf.gz"
     output:
-        vcf=out_dir/"minimac_imputed/{ancestry}_chr{chr}.dose.vcf.gz"
+        vcf=temp(out_dir/"minimac_imputed/{ancestry}_chr{chr}.dose.vcf.gz"),
+        info=temp(out_dir/"minimac_imputed/{ancestry}_chr{chr}.info")
     params:
         minimac4 = "/opt/bin/minimac4",
         chunk_length = config["params"]["chunk_length"]
+    log:
+        logs/"minimac/minimac_{ancestry}_chr{chr}.log"
     container:
         config['deps']['container']
     shell:
@@ -339,15 +366,16 @@ rule minimac_imputation:
             --format GT,DS,GP \
             --noPhoneHome \
             --cpus {threads} \
-            --ChunkLengthMb {params.chunk_length}
+            --ChunkLengthMb {params.chunk_length} \
+            > {log} 2>&1
         """
 
 rule combine_vcfs_ancestry:
     input:
-        vcfs = lambda wildcards: expand(out_dir/"minimac_imputed/{ancestry}_chr{chr}.dose.vcf.gz", ancestry=wildcards.ancestry, chr=chromosomes)
+        vcfs=lambda wildcards: expand(out_dir/"minimac_imputed/{ancestry}_chr{chr}.dose.vcf.gz", ancestry=wildcards.ancestry, chr=chromosomes)
     output:
-        combined = out_dir/"vcf_merged_by_ancestries/{ancestry}_imputed_hg38.vcf.gz",
-        ind = out_dir/"vcf_merged_by_ancestries/{ancestry}_imputed_hg38.vcf.gz.csi"
+        combined=temp(out_dir/"vcf_merged_by_ancestries/{ancestry}_imputed_hg38.vcf.gz"),
+        ind=temp(out_dir/"vcf_merged_by_ancestries/{ancestry}_imputed_hg38.vcf.gz.csi")
     log:
         logs/"combine_vcfs_{ancestry}.log"
     container:
@@ -360,21 +388,24 @@ rule combine_vcfs_ancestry:
 
 rule combine_vcfs_all:
     input:
-        vcfs = expand(out_dir/"vcf_merged_by_ancestries/{ancestry}_imputed_hg38.vcf.gz", ancestry = ancestry_subsets)
+        vcfs=expand(out_dir/"vcf_merged_by_ancestries/{ancestry}_imputed_hg38.vcf.gz", ancestry = ancestry_subsets),
+        indices=expand(out_dir/"vcf_merged_by_ancestries/{ancestry}_imputed_hg38.vcf.gz.csi", ancestry = ancestry_subsets)
     output:
-        combined = out_dir/"vcf_all_merged/imputed_hg38.vcf.gz",
-        ind = out_dir/"vcf_all_merged/imputed_hg38.vcf.gz.csi"
+        combined=temp(out_dir/"vcf_all_merged/imputed_hg38.vcf.gz"),
+        ind=temp(out_dir/"vcf_all_merged/imputed_hg38.vcf.gz.csi")
+    log:
+        logs/"combine_vcfs_all.log"
     container:
         config['deps']['container']
     shell:
         """
         if [[ $(ls -l {input.vcfs} | wc -l) > 1 ]]
         then
-            bcftools merge -Oz {input.vcfs} > {output.combined}
+            bcftools merge -Oz {input.vcfs} > {output.combined} 2> {log}
         else
             cp {input.vcfs} {output.combined}
         fi
-        bcftools index {output.combined}
+        bcftools index {output.combined} >> {log} 2>&1
         """
 
 rule restore_vcf_header:
@@ -392,5 +423,5 @@ rule restore_vcf_header:
         awk -F'\t' '{{print $2 "\t" $1}}' {input.id_map} \
             | bcftools reheader -s - {input.vcf} -o {output.final} \
             2> {log}
-        bcftools sort {output.final} 2>> {log}
+        bcftools index {output.final} 2>> {log}
         """
