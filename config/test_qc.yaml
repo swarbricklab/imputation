@@ -6,14 +6,14 @@ deps:
   container: resources/imputation/SNP_imputation_1000g_hg38.sif
 
 outs:
-  post_qc_plink: test/results/qc/update_sex_ancestry
+  post_qc_plink: test/results/post_qc
   logs: logs/imputation/qc
   
 refs:
   1000g:
-    pgen: "resources/1000g/all_phase3_filtered.pgen"
-    pvar: "resources/1000g/all_phase3_filtered.pvar"
-    psam: "resources/1000g/all_phase3_filtered.psam"
+    pgen: resources/1000g/all_phase3_filtered.pgen
+    pvar: resources/1000g/all_phase3_filtered.pvar
+    psam: resources/1000g/all_phase3_filtered.psam
 
 params:
   indiv_missingness_mind: 0.05
