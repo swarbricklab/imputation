@@ -413,7 +413,7 @@ rule restore_vcf_header:
         vcf=out_dir/"vcf_all_merged/imputed_hg38.vcf.gz",
         id_map=config['deps']['id_map']
     output:
-        final=out_dir/"imputed_hg38.vcf"
+        reheadered=temp(out_dir/"restore_header/imputed_hg38.vcf.gz")
     log:
         logs/"restore_vcf_header.log"
     container:
@@ -421,7 +421,58 @@ rule restore_vcf_header:
     shell:
         """
         awk -F'\t' '{{print $2 "\t" $1}}' {input.id_map} \
-            | bcftools reheader -s - {input.vcf} -o {output.final} \
+            | bcftools reheader -s - {input.vcf} -o {output.reheadered} \
             2> {log}
-        bcftools index {output.final} 2>> {log}
+        bcftools index {output.reheadered} 2>> {log}
+        """
+
+rule get_preimpute_XY:
+    input:
+        preimpute=config['deps']['input_vcf']
+    output:
+        pre_XY=temp(out_dir/"preimpute_XY.vcf.gz")
+    log:
+        logs/"preimpute_XY.log"
+    container:
+        "docker://quay.io/biocontainers/bcftools:1.21--h8b25389_0"
+    shell:
+        """
+        bcftools view -r chrX,chrY {input.preimpute} \
+            | bcftools sort -Oz -o {output.pre_XY} \
+            2> {log}
+        bcftools index {output.pre_XY} 2>> {log}
+        """
+
+rule get_postimpute_autosomes:
+    input:
+        reheadered=rules.restore_vcf_header.output.reheadered
+    output:
+        post_auto=temp(out_dir/"postimpute_autosomes.vcf.gz")
+    log:
+        logs/"postimpute_autosomes.log"
+    container:
+        "docker://quay.io/biocontainers/bcftools:1.21--h8b25389_0"
+    shell:
+        """
+        bcftools view -r 1-22 {input.reheadered} \
+            bcftools sort -Oz -o {output.post_auto} \
+            2> {log}
+        bcftools index {output.post_auto} 2>> {log}
+        """
+
+rule reinsert_XY:
+    input:
+        xy=rules.get_preimpute_XY.output.pre_XY,
+        auto=rules.get_postimpute_autosomes.output.post_auto
+    output:
+        final=out_dir/"imputed_hg38.vcf.gz",
+        index=out_dir/"imputed_hg38.vcf.gz.csi"
+    log:
+        logs/"reinsert_XY.log"
+    container:
+        "docker://quay.io/biocontainers/bcftools:1.21--h8b25389_0"
+    shell:
+        """
+        bcftools concat {input.auto} {input.xy} -Oz -o {output.final} 2> {log}
+        bcftools index {output.final}  2>> {log}
         """
