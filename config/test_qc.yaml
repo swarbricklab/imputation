@@ -1,6 +1,6 @@
 
 deps:
-  input_vcf: test/data/test.hg19.vcf
+  input_vcf: test/data/test.hg19.vcf.gz
   input_psam: test/data/test.psam
   id_map: test/data/id_map.tsv
   container: resources/imputation/SNP_imputation_1000g_hg38.sif
