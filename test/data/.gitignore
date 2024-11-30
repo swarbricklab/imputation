@@ -1,6 +1,6 @@
 /test.psam
 /id_map.tsv
 /test.hg19.vcf.gz
-/test.hg38.vcf.gz
 /test.hg38.vcf.gz.csi
 /test.hg19.vcf.gz.csi
+/test.hg38.vcf.gz
