@@ -1,0 +1,6 @@
+outs:
+- md5: 7f0f53a8adeae89a8b36a6fd9ef85680.dir
+  size: 484
+  nfiles: 2
+  hash: md5
+  path: chr_map
