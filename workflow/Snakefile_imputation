@@ -16,4 +16,4 @@ include: "rules/imputation.smk"
 
 rule all:
     input:
-        final=out_dir/"imputed_hg38.vcf"
+        final=out_dir/"imputed_filtered.hg38.vcf.gz"

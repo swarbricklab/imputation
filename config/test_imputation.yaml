@@ -1,4 +1,5 @@
 deps:
+  input_vcf: test/data/test.hg38.vcf.gz
   post_qc_plink: test/results/post_qc
   id_map: test/data/id_map.tsv
   container: resources/imputation/SNP_imputation_1000g_hg38.sif
@@ -13,6 +14,9 @@ refs:
   genetic_map: resources/genomes/hg38/phasing/genetic_map/genetic_map_hg38_withX.txt.gz
   phasing: resources/genomes/hg38/phasing/phasing_reference/
   impute: resources/reference/hg38/imputation
+  bed: resources/bed/hg38exonsUCSC.bed
+  int2chr: resources/genomes/chr_map/int2chr.txt
+  chr2int: resources/genomes/chr_map/chr2int.txt
 
 params:
     # the minimum proportion that can be missing for a snp to be included (5% by default)

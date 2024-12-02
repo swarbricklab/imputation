@@ -1,10 +1,10 @@
-md5: 84e3bef4eadd8fbdebaff1fbc131b4db
+md5: 4eed84dff3c5815473f237bc94c28a6b
 frozen: true
 deps:
 - path: test/results/test.psam
   repo:
     url: git@github.com:swarbricklab/genotyping.git
-    rev_lock: 02dee2ea55cd674a626a256f46c39e85822eb014
+    rev_lock: ecca76182f1a8ce09da56696ac58d0460dcaf24d
 outs:
 - md5: 9d44bcfb4e34fa4bf5cc5f294abd4325
   size: 147

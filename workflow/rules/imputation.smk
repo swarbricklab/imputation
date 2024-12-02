@@ -413,7 +413,8 @@ rule restore_vcf_header:
         vcf=out_dir/"vcf_all_merged/imputed_hg38.vcf.gz",
         id_map=config['deps']['id_map']
     output:
-        final=out_dir/"imputed_hg38.vcf"
+        reheadered=temp(out_dir/"restore_header/imputed_hg38.vcf.gz"),
+        idx=temp(out_dir/"restore_header/imputed_hg38.vcf.gz.csi")
     log:
         logs/"restore_vcf_header.log"
     container:
@@ -421,7 +422,110 @@ rule restore_vcf_header:
     shell:
         """
         awk -F'\t' '{{print $2 "\t" $1}}' {input.id_map} \
-            | bcftools reheader -s - {input.vcf} -o {output.final} \
+            | bcftools reheader -s - {input.vcf} -o {output.reheadered} \
             2> {log}
-        bcftools index {output.final} 2>> {log}
+        bcftools index {output.reheadered} 2>> {log}
+        """
+
+rule get_preimpute_XY:
+    input:
+        preimpute=config['deps']['input_vcf'],
+        map=config['refs']['chr2int']
+    output:
+        input_idx=temp(config['deps']['input_vcf']+'.csi'),
+        pre_XY=temp(out_dir/"preimpute_XY.vcf.gz"),
+        pre_XY_idx=temp(out_dir/"preimpute_XY.vcf.gz.csi")
+    log:
+        logs/"preimpute_XY.log"
+    container:
+        "docker://quay.io/biocontainers/bcftools:1.21--h8b25389_0"
+    shell:
+        """
+        bcftools index {input.preimpute}
+        bcftools view -r chrX,chrY {input.preimpute} \
+            | bcftools annotate --rename-chrs {input.map} \
+            | bcftools sort -Oz -o {output.pre_XY} \
+            2> {log}
+        bcftools index {output.pre_XY} 2>> {log}
+        """
+
+rule reinsert_XY:
+    input:
+        xy=rules.get_preimpute_XY.output.pre_XY,
+        auto=rules.restore_vcf_header.output.reheadered
+    output:
+        vcf=temp(out_dir/"merged/imputed_hg38.vcf.gz"),
+        index=temp(out_dir/"merged/imputed_hg38.vcf.gz.csi")
+    log:
+        logs/"reinsert_XY.log"
+    container:
+        "docker://quay.io/biocontainers/bcftools:1.21--h8b25389_0"
+    shell:
+        """
+        bcftools concat {input.auto} {input.xy} -Oz -o {output.vcf} 2> {log}
+        bcftools index {output.vcf}  2>> {log}
+        """
+
+rule filter_maf_r2:
+    input:
+        vcf=rules.reinsert_XY.output.vcf,
+    output:
+        vcf=temp(out_dir/"filtered/imputed_filtered_maf_r2.hg38.vcf.gz"),
+        idx=temp(out_dir/"filtered/imputed_filtered_maf_r2.hg38.vcf.gz.csi")
+    log:
+        logs/"filter_maf_r2.log"
+    container:
+        "docker://quay.io/biocontainers/bcftools:1.21--h8b25389_0"
+    shell:
+        """ 
+            bcftools filter -i '(IMPUTED=1 && MAF >= 0.05 && R2 > 0.8) || (IMPUTED=0)' \
+                -Oz -o {output.vcf} \
+                {input.vcf} \
+                2> {log}
+            bcftools index {output.vcf} 2>> {log}
+        """
+
+rule filter_exons_indels:
+    input:
+        vcf=rules.filter_maf_r2.output.vcf,
+        bed=config['refs']['bed']
+    output:
+        vcf=temp(out_dir/"filter_exons_indels/imputed_filtered_maf_r2.hg38.recode.vcf.gz")
+    log:
+        logs/"filter_exons.indels.log"
+    container:
+        "resources/imputation/SNP_imputation_1000g_hg38.sif"
+    shell:
+        """
+        out_vcf={output.vcf}
+        out_prefix=${{out_vcf%.recode.vcf.gz}}
+        vcftools --gzvcf {input.vcf} \
+            --max-alleles 2 \
+            --remove-indels \
+            --bed {input.bed} \
+            --recode \
+            --recode-INFO-all \
+            --out $out_prefix \
+            2> {log}
+        bgzip ${{out_prefix}}.recode.vcf 2>> {log}
+        """
+
+rule rename_chromosomes:
+    input:
+        vcf=rules.filter_exons_indels.output.vcf,
+        map=config['refs']['int2chr']
+    output:
+        vcf=out_dir/"imputed_filtered.hg38.vcf.gz"
+    log:
+        logs/"rename_chromosomes.log"
+    container:
+        "docker://quay.io/biocontainers/bcftools:1.21--h8b25389_0"
+    shell:
+        """
+        bcftools annotate --rename-chrs {input.map} {input.vcf} \
+            | bcftools sort \
+            | sed 's/; Date=.*//g' \
+            | bgzip -c \
+            > {output.vcf}
+        bcftools index {output.vcf}
         """
