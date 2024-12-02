@@ -1,3 +1,11 @@
+md5: d291d75cef23fa9c8a30cafd83dc7a0b
+frozen: true
+deps:
+- path: chr_map
+  repo:
+    url: git@github.com:Swarbricklab/references.git
+    rev: cee43253d86192d2fb9a14d94e995531d6d606ee
+    rev_lock: cee43253d86192d2fb9a14d94e995531d6d606ee
 outs:
 - md5: 7f0f53a8adeae89a8b36a6fd9ef85680.dir
   size: 484
