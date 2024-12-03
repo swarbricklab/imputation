@@ -452,7 +452,9 @@ rule get_preimpute_XY:
 rule reinsert_XY:
     input:
         xy=rules.get_preimpute_XY.output.pre_XY,
-        auto=rules.restore_vcf_header.output.reheadered
+        xy_idx=rules.get_preimpute_XY.output.pre_XY_idx,
+        auto=rules.restore_vcf_header.output.reheadered,
+        auto_idx=rules.restore_vcf_header.output.idx
     output:
         vcf=temp(out_dir/"merged/imputed_hg38.vcf.gz"),
         index=temp(out_dir/"merged/imputed_hg38.vcf.gz.csi")
@@ -462,7 +464,7 @@ rule reinsert_XY:
         "docker://quay.io/biocontainers/bcftools:1.21--h8b25389_0"
     shell:
         """
-        bcftools concat {input.auto} {input.xy} -Oz -o {output.vcf} 2> {log}
+        bcftools merge --force-samples {input.auto} {input.xy} -Oz -o {output.vcf} 2> {log}
         bcftools index {output.vcf}  2>> {log}
         """
 
