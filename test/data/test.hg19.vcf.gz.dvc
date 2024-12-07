@@ -1,12 +1,12 @@
-md5: d986af5104c50e797dee5f9a12808431
+md5: 1972ced70f9a8815b532dacea55a39c6
 frozen: true
 deps:
 - path: test/results/test.hg19.vcf.gz
   repo:
     url: git@github.com:swarbricklab/genotyping.git
-    rev_lock: ecca76182f1a8ce09da56696ac58d0460dcaf24d
+    rev_lock: 19b553457e32698eca10becc531c6af6b3a33310
 outs:
-- md5: e2116e1f7f829cdef3bfdab9bb41dcbe
-  size: 7657939
+- md5: bdb7d7e215d056eaa4178a29a95cb8da
+  size: 7943327
   hash: md5
   path: test.hg19.vcf.gz
