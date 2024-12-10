@@ -30,6 +30,8 @@ The output of this stage is an updated set of plink files:
 
 The rule graph is as follows:
 
-TODO: insert rule graph 
+![QC Rulegraph](docs/qc_rulegraph.svg)
 
+## Imputation
 
+![Imputation Rulegraph](docs/imputation_rulegraph.svg)
