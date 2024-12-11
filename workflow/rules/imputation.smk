@@ -179,7 +179,7 @@ rule plink_to_vcf:
 
 rule vcf_fixref_hg38:
     input:
-        fasta=config['refs']['hg38_fa'],
+        fasta=config['refs']['hg38_int_fa'],
         vcf=config['refs']['vcf'],
         index=config['refs']['vcf'] + ".tbi",
         data_vcf=out_dir/"harmonize_hg38/{ancestry}_harmonised_hg38.vcf.gz"
@@ -515,8 +515,10 @@ rule filter_exons_indels:
 rule rename_chromosomes:
     input:
         vcf=rules.filter_exons_indels.output.vcf,
-        map=config['refs']['int2chr']
+        map=config['refs']['int2chr'],
+        fai=config['refs']['hg38_chr_fai']
     output:
+        tmp_vcf=out_dir/"temp.vcf",
         vcf=out_dir/"imputed_filtered.hg38.vcf.gz"
     log:
         logs/"rename_chromosomes.log"
@@ -525,6 +527,10 @@ rule rename_chromosomes:
     shell:
         """
         bcftools annotate --rename-chrs {input.map} {input.vcf} \
+            | bcftools view \
+            | grep -v "##contig=<ID=" \
+            > {output.tmp_vcf}
+        bcftools reheader --fai {input.fai} {output.tmp_vcf} \
             | bcftools sort \
             | sed 's/; Date=.*//g' \
             | bgzip -c \
