@@ -464,7 +464,7 @@ rule reinsert_XY:
         "docker://quay.io/biocontainers/bcftools:1.21--h8b25389_0"
     shell:
         """
-        bcftools merge --force-samples {input.auto} {input.xy} -Oz -o {output.vcf} 2> {log}
+        bcftools concat {input.auto} {input.xy} -Oz -o {output.vcf} 2> {log}
         bcftools index {output.vcf}  2>> {log}
         """
 
