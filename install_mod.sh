@@ -15,3 +15,10 @@ cp --no-clobber -a modules/$name/resources/. resources/
 echo "Resource files copied to dataset"
 echo "Commit .dvc and .gitignore files to the dataset repo"
 echo "Then 'dvc pull -R resources/' to download the resources to the dataset"
+
+echo "Adding to DVC pipeline"
+if [ ! -f "dvc.yaml" ]; then
+    echo "Creating dvc.yaml. Commit this to dataset repo"
+    echo "stages:" > dvc.yaml
+fi
+cat modules/$name/dvc_template.yaml >> dvc.yaml
