@@ -456,6 +456,8 @@ rule reinsert_XY:
         auto=rules.restore_vcf_header.output.reheadered,
         auto_idx=rules.restore_vcf_header.output.idx
     output:
+        order=temp(out_dir/"sample_order.txt"),
+        reordered_auto=temp(out_dir/"reordered_auto.vcf.gz"),
         vcf=temp(out_dir/"merged/imputed_hg38.vcf.gz"),
         index=temp(out_dir/"merged/imputed_hg38.vcf.gz.csi")
     log:
@@ -464,7 +466,9 @@ rule reinsert_XY:
         "docker://quay.io/biocontainers/bcftools:1.21--h8b25389_0"
     shell:
         """
-        bcftools concat {input.auto} {input.xy} -Oz -o {output.vcf} 2> {log}
+        bcftools query -l {input.xy} > {output.order}
+        bcftools view -S {output.order} -o {output.reordered_auto} {input.auto}
+        bcftools concat {output.reordered_auto} {input.xy} -Oz -o {output.vcf} 2> {log}
         bcftools index {output.vcf}  2>> {log}
         """
 
