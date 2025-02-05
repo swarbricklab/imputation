@@ -1,11 +1,11 @@
 deps:
-  input_vcf: data/genotyping/combined.hg38.vcf
-  post_qc_plink: data/genotyping/post_qc
-  id_map: data/genotyping/id_map.tsv
+  input_vcf: data/snp/genotyping/donors.hg38.vcf
+  post_qc_plink: data/snp/plink_qc
+  id_map: data/snp/genotyping/id_map.tsv
   container: resources/imputation/SNP_imputation_1000g_hg38.sif
 
 outs:
-  results: data/imputation
+  results: data/snp/imputation
   logs: logs/imputation
 
 refs:
