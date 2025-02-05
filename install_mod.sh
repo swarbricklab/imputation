@@ -2,15 +2,7 @@
 
 # This script installs the workflow as a submodule of a dataset
 
-repo=git@github.com:swarbricklab/imputation.git
 name=imputation
-
-echo "Installing $name as git submodule"
-git submodule add $repo modules/$name 
-cd modules/$name
-git submodule init
-git submodule update
-cd -
 
 echo "Preparing config templates"
 mkdir -p config/$name
