@@ -79,7 +79,9 @@ rule check_sex:
         bim=temp(out_dir/"check_sex/check_sex.bim"),
         fam=temp(out_dir/"check_sex/check_sex.fam"),
         sexcheck=temp(out_dir/"check_sex/check_sex.sexcheck"),
-        sexcheck_tsv=temp(out_dir/"check_sex/check_sex.sexcheck.tsv")
+        sexcheck_tsv=temp(out_dir/"check_sex/check_sex.sexcheck.tsv"),
+        hh=temp(out_dir/"check_sex/check_sex.hh"),
+        no=temp(out_dir/"check_sex/check_sex.nosex")
     log:
         logs/"plink/check_sex.log"
     container:
