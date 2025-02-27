@@ -1,7 +1,7 @@
 deps:
   input_vcf: data/snp/genotyping/donors.hg38.vcf.gz
   post_qc_plink: data/snp/plink_qc
-  id_map: data/genotyping/id_map.tsv
+  id_map: data/snp/genotyping/id_map.tsv
   container: resources/imputation/SNP_imputation_1000g_hg38.sif
 
 outs:
@@ -10,10 +10,14 @@ outs:
 
 refs:
   vcf: resources/genomes/hg38/ref_panel_QC/30x-GRCh38_NoSamplesSorted.vcf.gz
-  hg38_fa: resources/genomes/hg38/ref_genome_QC/Homo_sapiens.GRCh38.dna.primary_assembly.fa
+  hg38_int_fa: resources/genomes/hg38/ref_genome_QC/Homo_sapiens.GRCh38.dna.primary_assembly.fa
+  hg38_chr_fai: resources/genomes/refdata-gex-GRCh38-2020-A/fasta/genome.fa.fai
   genetic_map: resources/genomes/hg38/phasing/genetic_map/genetic_map_hg38_withX.txt.gz
   phasing: resources/genomes/hg38/phasing/phasing_reference/
   impute: resources/reference/hg38/imputation
+  bed: resources/bed/hg38exonsUCSC.bed
+  int2chr: resources/genomes/chr_map/int2chr.txt
+  chr2int: resources/genomes/chr_map/chr2int.txtn
 
 params:
     # the minimum proportion that can be missing for a snp to be included (5% by default)
