@@ -11,9 +11,7 @@
       - resources/1000g/
     outs:
       - data/snp/plink_qc
-      - data/snp/pca_sex_checks/
       - logs/snp/plink_qc
-    frozen: true
   imputation:
     cmd: ./modules/imputation/run_imputation.sh
     deps:
