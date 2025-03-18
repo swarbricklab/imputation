@@ -20,7 +20,7 @@ refs:
   chr2int: resources/genomes/chr_map/chr2int.txt
 
 params:
-    # the minimum proportion that can be missing for a snp to be included (5% by default)
+    # the maximum proportion that can be missing for a snp to be included (5% by default)
     snp_missing_pct: 0.05
     # the threshold used for calling a SNP outside of HWE
     snp_hwe: 1e-6
