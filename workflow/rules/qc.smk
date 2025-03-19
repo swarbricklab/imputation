@@ -109,6 +109,7 @@ rule check_sex:
         rm ${{out_prefix}}.log
 
         awk '{{$1=$1}}1' OFS="\t" {output.sexcheck} > {output.sexcheck_tsv}
+        touch {output.no}
         """
 
 rule find_common_snps:
