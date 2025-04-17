@@ -21,6 +21,16 @@ else
     global_profile=""
 fi
 
+# Make rule graph in dataset repo
+mkdir -p docs/graphs
+snakemake $global_profile $workflow_profile \
+    --snakefile modules/$module/workflow/Snakefile_qc \
+    --configfile config/$module/config_qc.yaml \
+    --rulegraph \
+    | dot -Tsvg \
+    > docs/graphs/plink_qc.svg
+
+# Run QC module
 snakemake $global_profile $workflow_profile \
     --snakefile modules/$module/workflow/Snakefile_qc \
     --configfile config/$module/config_qc.yaml \
