@@ -26,7 +26,7 @@ snakemake $global_profile $workflow_profile \
     --configfile config/$module/config_imputation.yaml \
     --rulegraph \
     | dot -Tsvg \
-    > docs/graphs/${module}.svg
+    > docs/graphs/imputation.svg
 
 snakemake $global_profile $workflow_profile \
     --snakefile modules/$module/workflow/Snakefile_imputation \
