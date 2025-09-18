@@ -26,4 +26,7 @@ params:
     snp_hwe: 1e-6
     # length in Mb for minimac4 imputation chunks (20 by default)
     chunk_length: 40
-    maf: 0.0
+    # Minimum MAF (=Minor Allele Frequency) applied in preimputation filtering
+    pre_maf:  0.0
+    # Minimum MAF applied in post-imputation filtering
+    post_maf: 0.01

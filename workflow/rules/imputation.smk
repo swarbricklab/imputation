@@ -206,7 +206,7 @@ rule filter_preimpute_vcf:
         filtered_vcf=temp(out_dir/"filter_preimpute_vcf/{ancestry}_filtered.vcf.gz"),
         filtered_index=temp(out_dir/"filter_preimpute_vcf/{ancestry}_filtered.vcf.gz.csi")
     params:
-        maf=config['params']['maf'],
+        maf=config['params']['pre_maf'],
         missing=config["params"]["snp_missing_pct"],
         hwe=config["params"]["snp_hwe"]
     log:
@@ -478,13 +478,15 @@ rule filter_maf_r2:
     output:
         vcf=temp(out_dir/"filtered/imputed_filtered_maf_r2.hg38.vcf.gz"),
         idx=temp(out_dir/"filtered/imputed_filtered_maf_r2.hg38.vcf.gz.csi")
+    params:
+        maf=config['params']['post_maf']
     log:
         logs/"filter_maf_r2.log"
     container:
         "docker://quay.io/biocontainers/bcftools:1.21--h8b25389_0"
     shell:
         """ 
-            bcftools filter -i '(IMPUTED=1 && MAF >= 0.05 && R2 > 0.8) || (IMPUTED=0)' \
+            bcftools filter -i '(IMPUTED=1 && MAF >= {params.maf} && R2 > 0.8) || (IMPUTED=0)' \
                 -Oz -o {output.vcf} \
                 {input.vcf} \
                 2> {log}
