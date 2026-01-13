@@ -40,15 +40,40 @@ rule run_plink:
         mv ${{plink_prefix}}.log {log}
         """
 
-rule indiv_missingness:
+rule calculate_missingness:
     input:
         psam=rules.run_plink.output.psam,
         pgen=rules.run_plink.output.pgen,
         pvar=rules.run_plink.output.pvar
     output:
-        pgen=temp(out_dir/"indiv_missingness/indiv_missingness.pgen"),
-        pvar=temp(out_dir/"indiv_missingness/indiv_missingness.pvar"),
-        psam=temp(out_dir/"indiv_missingness/indiv_missingness.psam")
+        smiss=out_dir/"indiv_missingness/sample_missingness.smiss"
+    log:
+        logs/"plink/calculate_missingness.log"
+    container:
+        config['deps']['container']
+    shell:
+        """
+        in_pgen={input.pgen}
+        in_prefix=${{in_pgen%.pgen}}
+        out_smiss={output.smiss}
+        out_prefix=${{out_smiss%.smiss}}
+        plink2 --threads {threads} \
+            --pfile $in_prefix \
+            --missing \
+            --out $out_prefix
+        mv ${{out_prefix}}.log {log}
+        """
+
+rule indiv_missingness:
+    input:
+        psam=rules.run_plink.output.psam,
+        pgen=rules.run_plink.output.pgen,
+        pvar=rules.run_plink.output.pvar,
+        smiss=rules.calculate_missingness.output.smiss
+    output:
+        pgen=out_dir/"indiv_missingness/indiv_missingness.pgen",
+        pvar=out_dir/"indiv_missingness/indiv_missingness.pvar",
+        psam=out_dir/"indiv_missingness/indiv_missingness.psam"
     params:
        mind = config["params"]["indiv_missingness_mind"]
     log:
