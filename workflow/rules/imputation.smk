@@ -220,7 +220,7 @@ rule filter_preimpute_vcf:
         bcftools +fill-tags {input.vcf} -Oz -o {output.tagged_vcf} 2> {log}
 
         #Filter rare and non-HWE variants and those with abnormal alleles and duplicates
-        bcftools filter -i 'INFO/HWE > {params.hwe} & F_MISSING < {params.missing} & MAF[0] > {params.maf}' {output.tagged_vcf} \
+        bcftools filter -i 'INFO/HWE > {params.hwe} & F_MISSING < {params.missing} & MAF[0] > {params.pre_maf}' {output.tagged_vcf} \
             | bcftools filter -e 'REF="N" | REF="I" | REF="D"' \
             | bcftools filter -e "ALT='.'" \
             | bcftools norm -d all \
@@ -486,7 +486,7 @@ rule filter_maf_r2:
         "docker://quay.io/biocontainers/bcftools:1.21--h8b25389_0"
     shell:
         """ 
-            bcftools filter -i '(IMPUTED=1 && MAF >= {params.maf} && R2 > 0.8) || (IMPUTED=0)' \
+            bcftools filter -i '(IMPUTED=1 && MAF >= {params.post_MAF} && R2 > 0.8) || (IMPUTED=0)' \
                 -Oz -o {output.vcf} \
                 {input.vcf} \
                 2> {log}
