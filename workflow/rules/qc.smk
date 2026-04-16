@@ -511,3 +511,55 @@ rule update_sex_ancestry:
         mv ${{out_prefix}}.log {log}
         """
 
+rule export_sample_metadata:
+    input:
+        psam=final/"post_qc.psam"
+    output:
+        csv=metadata_csv
+    run:
+        psam_df = pd.read_csv(input.psam, sep="\t", dtype=str)
+
+        # Select relevant columns
+        df = psam_df[["IID", "SEX", "Provided_Ancestry"]].copy()
+
+        # Map sex codes to labels
+        sex_map = {"1": "Male", "2": "Female"}
+        df["SEX"] = df["SEX"].map(sex_map).fillna("Unknown")
+
+        # HANCESTRO sample-level inferred ancestry
+        ancestry_map = {
+            "EUR": "European ancestry",
+            "EAS": "East Asian ancestry",
+            "AFR": "African ancestry",
+            "SAS": "South Asian ancestry",
+            "AMR": "Latin American or Admixed American ancestry",
+        }
+        ancestry_id_map = {
+            "EUR": "HANCESTRO:0005",
+            "EAS": "HANCESTRO:0009",
+            "AFR": "HANCESTRO:0010",
+            "SAS": "HANCESTRO:0006",
+            "AMR": "HANCESTRO:0014",
+        }
+
+        # HANCESTRO 1KGP reference superpopulation (provenance)
+        ref_superpop_id_map = {
+            "EUR": "HANCESTRO:2003",
+            "EAS": "HANCESTRO:2002",
+            "AFR": "HANCESTRO:2000",
+            "SAS": "HANCESTRO:2004",
+            "AMR": "HANCESTRO:2001",
+        }
+
+        raw_anc = df["Provided_Ancestry"]
+        df["ancestry"] = raw_anc.map(ancestry_map)
+        df["ancestry_id"] = raw_anc.map(ancestry_id_map)
+        df["reference_superpopulation"] = raw_anc.where(raw_anc.isin(ref_superpop_id_map), other=raw_anc)
+        df["reference_superpopulation_id"] = raw_anc.map(ref_superpop_id_map)
+
+        # Rename and select final columns
+        df = df.rename(columns={"IID": "gussid", "SEX": "sex"})
+        df = df[["gussid", "sex", "ancestry", "ancestry_id", "reference_superpopulation", "reference_superpopulation_id"]]
+
+        df.to_csv(output.csv, index=False)
+

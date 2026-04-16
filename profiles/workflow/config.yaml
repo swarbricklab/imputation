@@ -5,7 +5,7 @@ verbose: False
 keep-going: True
 rerun-incomplete: True
 latency-wait: 30
-retries: 0
+retries: 1
 
 # Conda settings
 use-conda: True
@@ -109,8 +109,9 @@ set-resources:
     runtime: 80
   combine_vcfs_ancestry:
     threads: 2
-    runtime: 60
+    runtime: 90
+    mem: "16GB"
   combine_vcfs_all:
     threads: 2
-    mem: "16GB"
+    mem: "32GB"
     runtime: 250
