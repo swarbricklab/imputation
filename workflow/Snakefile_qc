@@ -5,10 +5,12 @@ import pandas as pd
 out_dir = Path(config['outs']['post_qc_plink']).parent
 logs = Path(config['outs']['logs'])
 final = Path(config['outs']['post_qc_plink'])
+metadata_csv = out_dir / "derived_sample_metadata.csv"
 
 include: "rules/qc.smk"
 
 rule all:
     input:
-        post_qc_plink=final/"post_qc.psam"
+        post_qc_plink=final/"post_qc.psam",
+        metadata=metadata_csv
 

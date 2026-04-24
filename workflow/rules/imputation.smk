@@ -427,22 +427,30 @@ rule restore_vcf_header:
         bcftools index {output.reheadered} 2>> {log}
         """
 
+# NOTE: The input VCF (pre-QC) may contain samples that were removed during
+# upstream QC steps (e.g. individual missingness filtering via --mind in the
+# plink_qc stage). We must subset the XY chromosomes to only post-QC samples
+# so that reinsert_XY can merge them with the imputed autosomes without a
+# sample mismatch.
 rule get_preimpute_XY:
     input:
         preimpute=config['deps']['input_vcf'],
-        map=config['refs']['chr2int']
+        map=config['refs']['chr2int'],
+        psam=post_qc_plink/"post_qc.psam"
     output:
         input_idx=temp(config['deps']['input_vcf']+'.csi'),
         pre_XY=temp(out_dir/"preimpute_XY.vcf.gz"),
-        pre_XY_idx=temp(out_dir/"preimpute_XY.vcf.gz.csi")
+        pre_XY_idx=temp(out_dir/"preimpute_XY.vcf.gz.csi"),
+        samples=temp(out_dir/"post_qc_samples.txt")
     log:
         logs/"preimpute_XY.log"
     container:
         "docker://quay.io/biocontainers/bcftools:1.21--h8b25389_0"
     shell:
         """
+        awk 'NR>1 {{print $2}}' {input.psam} > {output.samples}
         bcftools index {input.preimpute}
-        bcftools view -r chrX,chrY {input.preimpute} \
+        bcftools view -r chrX,chrY -S {output.samples} {input.preimpute} \
             | bcftools annotate --rename-chrs {input.map} \
             | bcftools sort -Oz -o {output.pre_XY} \
             2> {log}
