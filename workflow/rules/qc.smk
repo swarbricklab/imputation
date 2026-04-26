@@ -104,9 +104,7 @@ rule check_sex:
         bim=temp(out_dir/"check_sex/check_sex.bim"),
         fam=temp(out_dir/"check_sex/check_sex.fam"),
         sexcheck=temp(out_dir/"check_sex/check_sex.sexcheck"),
-        sexcheck_tsv=temp(out_dir/"check_sex/check_sex.sexcheck.tsv"),
-        hh=temp(out_dir/"check_sex/check_sex.hh"),
-        no=temp(out_dir/"check_sex/check_sex.nosex")
+        sexcheck_tsv=temp(out_dir/"check_sex/check_sex.sexcheck.tsv")
     log:
         logs/"plink/check_sex.log"
     container:
@@ -134,7 +132,6 @@ rule check_sex:
         rm ${{out_prefix}}.log
 
         awk '{{$1=$1}}1' OFS="\t" {output.sexcheck} > {output.sexcheck_tsv}
-        touch {output.no}
         """
 
 rule find_common_snps:
