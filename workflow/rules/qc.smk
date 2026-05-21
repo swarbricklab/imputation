@@ -316,6 +316,51 @@ rule final_pruning: ### put in contingency for duplicated snps - remove from bot
         mv ${{out_prefix}}.log {log}
         """
 
+# KING-robust kinship is ancestry-agnostic, so this runs on the pooled pruned
+# data to catch cross-ancestry duplicates and sample swaps. Two plink2 passes
+# are needed because --king-cutoff prunes samples before --make-king-table
+# writes the .kin0, so combining them would silently truncate the report.
+# Upstream pfiles all set psam-cols=fid,..., so .king.cutoff.out.id is
+# guaranteed two-column FID/IID and the tail-append in rule separate_indivs
+# is safe.
+rule relatedness_check:
+    input:
+        bed=rules.final_pruning.output.bed,
+        bim=rules.final_pruning.output.bim,
+        fam=rules.final_pruning.output.fam
+    output:
+        kin0=out_dir/"relatedness/relatedness_check.kin0",
+        remove_id=temp(out_dir/"relatedness/relatedness_check.king.cutoff.out.id"),
+        in_id=temp(out_dir/"relatedness/relatedness_check.king.cutoff.in.id")
+    params:
+        king_cutoff=config["params"]["king_cutoff"],
+        king_table_cutoff=config["params"]["king_table_cutoff"]
+    log:
+        logs/"plink/relatedness_check.log"
+    container:
+        config['deps']['container']
+    shell:
+        """
+        in_pgen={input.bed}
+        in_prefix=${{in_pgen%.pgen}}
+        out_kin0={output.kin0}
+        out_prefix=${{out_kin0%.kin0}}
+
+        plink2 --threads {threads} \
+            --pfile $in_prefix \
+            --make-king-table \
+            --king-table-filter {params.king_table_cutoff} \
+            --out $out_prefix
+        mv ${{out_prefix}}.log {log}
+
+        plink2 --threads {threads} \
+            --pfile $in_prefix \
+            --king-cutoff {params.king_cutoff} \
+            --out $out_prefix
+        cat ${{out_prefix}}.log >> {log}
+        rm ${{out_prefix}}.log
+        """
+
 ### use PCA from plink for PCA and projection
 rule pca_1000g:
     input:
@@ -413,7 +458,8 @@ rule pca_projection_assign:
 rule separate_indivs:
     input:
         sexcheck=out_dir/"pca_sex_checks/check_sex_update_remove.tsv",
-        anc_check=out_dir/"pca_sex_checks/ancestry_update_remove.tsv"
+        anc_check=out_dir/"pca_sex_checks/ancestry_update_remove.tsv",
+        king_remove=rules.relatedness_check.output.remove_id
     output:
         update_sex=temp(out_dir/"separate_indivs/sex_update_indivs.tsv"),
         remove_indiv=temp(out_dir/"separate_indivs/remove_indivs.tsv"),
@@ -433,6 +479,8 @@ rule separate_indivs:
             > {output.remove_indiv_temp}
         grep "REMOVE" {input.anc_check} \
             | awk 'BEGIN{{FS=OFS="\t"}}{{print($1,$2)}}' \
+            >> {output.remove_indiv_temp}
+        tail -n +2 {input.king_remove} \
             >> {output.remove_indiv_temp}
         sort -u {output.remove_indiv_temp} > {output.remove_indiv}
         """
