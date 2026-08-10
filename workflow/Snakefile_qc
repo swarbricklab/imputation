@@ -13,5 +13,6 @@ rule all:
     input:
         post_qc_plink=final/"post_qc.psam",
         metadata=metadata_csv,
-        kin0=out_dir/"relatedness/relatedness_check.kin0"
+        kin0=out_dir/"relatedness/relatedness_check.kin0",
+        unrelated=final/"unrelated_sample_ids.txt"
 

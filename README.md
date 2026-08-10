@@ -27,6 +27,15 @@ The output of this stage is an updated set of plink files:
 - pgen: genotype information in plink format
 - pvar: ?
 - psam: an updated version of the sample description file, in which sex annoations have been double checked and ancestries have been assigned based on the 1000 Genomes reference
+- unrelated_sample_ids.txt: a maximal unrelated subset of the post-QC samples, selected by KING kinship (`--king-cutoff`)
+- derived_sample_metadata.csv: per-sample sex, inferred ancestry, kinship group and genotyping call rate
+
+### Related samples
+
+Samples that fail the sex or ancestry checks are not removed; their annotations are corrected instead (sex to the genotype-inferred value, ancestry to the PCA assignment). Related samples are also **not** removed: the final VCF exists for SNP demultiplexing, so every array a donor has must stay available for selection downstream.
+Instead, the KING keep-list (`unrelated_sample_ids.txt`) defines the unrelated subset on which the imputation stage computes its frequency-based variant statistics (HWE, MAF), so duplicate samples cannot distort them; the resulting variant filters are then applied to all samples (see rule `filter_preimpute_vcf`). Per-variant missingness is deliberately evaluated over all samples, since every array is an independent observation of probe quality.
+In the metadata, samples of the same donor (kinship at or above `king_duplicate_cutoff`, i.e. repeat arrays or identical twins) share a `kinship_group`, and `genotype_call_rate` gives a basis for choosing among them.
+The default cutoff (0.3) aims to accomodate a loss of heterozygosity depressesing the kinship estimate between a donor's tumour and blood arrays, while staying well above the first-degree relative expectation of 0.25.
 
 The rule graph is as follows:
 
