@@ -89,7 +89,7 @@ set-resources:
   filter_preimpute_vcf:
     mem: "2GB"
     threads: 2
-    runtime: 5
+    runtime: 15
   het:
     threads: 2
     mem: "2GB"

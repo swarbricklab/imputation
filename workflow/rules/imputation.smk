@@ -198,11 +198,30 @@ rule vcf_fixref_hg38:
         bcftools index {output.vcf} 2>> {log}
         """
 
+# HWE and MAF are computed on the cohort's unrelated subset only, so that a
+# donor's repeat arrays are not counted twice. The per-site values are then
+# copied onto the all-samples VCF with bcftools annotate (matched on
+# CHROM/POS/REF/ALT), so every sample goes through the same variant filter
+# and related samples stay in the output. F_MISSING is not a tag but
+# evaluated from the genotypes at filter time, deliberately over all samples:
+# missingness measures probe quality, and every array is an independent
+# observation of it.
+# Caveat: a site whose only minor-allele carriers sit outside the unrelated
+# subset has subset MAF 0 and is dropped for everyone. Harmless while every
+# excluded sample is a same-donor duplicate, but a true relative pair would
+# lose its private variants.
 rule filter_preimpute_vcf:
     input:
-        vcf=out_dir/"vcf_fixref_hg38/{ancestry}_fixref_hg38.vcf.gz"
+        vcf=out_dir/"vcf_fixref_hg38/{ancestry}_fixref_hg38.vcf.gz",
+        # bcftools annotate reads the target through a synced reader, so the
+        # target index is needed too, not just the annotation file's
+        index=out_dir/"vcf_fixref_hg38/{ancestry}_fixref_hg38.vcf.gz.csi",
+        unrelated=post_qc_plink/"unrelated_sample_ids.txt"
     output:
-        tagged_vcf=temp(out_dir/"filter_preimpute_vcf/{ancestry}_tagged.vcf.gz"),
+        batch_samples=temp(out_dir/"filter_preimpute_vcf/{ancestry}_batch_samples.txt"),
+        stats_samples=temp(out_dir/"filter_preimpute_vcf/{ancestry}_stats_samples.txt"),
+        unrel_tagged_vcf=temp(out_dir/"filter_preimpute_vcf/{ancestry}_unrelated_tagged.vcf.gz"),
+        unrel_tagged_index=temp(out_dir/"filter_preimpute_vcf/{ancestry}_unrelated_tagged.vcf.gz.csi"),
         filtered_vcf=temp(out_dir/"filter_preimpute_vcf/{ancestry}_filtered.vcf.gz"),
         filtered_index=temp(out_dir/"filter_preimpute_vcf/{ancestry}_filtered.vcf.gz.csi")
     params:
@@ -215,12 +234,39 @@ rule filter_preimpute_vcf:
         config['deps']['container']
     shell:
         """
-        #Add tags
         export BCFTOOLS_PLUGINS=/opt/bcftools-1.10.2/plugins
-        bcftools +fill-tags {input.vcf} -Oz -o {output.tagged_vcf} 2> {log}
 
-        #Filter rare and non-HWE variants and those with abnormal alleles and duplicates
-        bcftools filter -i 'INFO/HWE > {params.hwe} & F_MISSING < {params.missing} & MAF[0] > {params.maf}' {output.tagged_vcf} \
+        #Restrict the cohort-wide unrelated keep-list to this ancestry batch
+        bcftools query -l {input.vcf} > {output.batch_samples}
+        awk 'NR==FNR {{keep[$1]; next}} ($1 in keep)' {input.unrelated} {output.batch_samples} > {output.stats_samples}
+        echo "$(wc -l < {output.stats_samples}) of $(wc -l < {output.batch_samples}) samples used for variant statistics" > {log}
+
+        #The stats list can be empty: KING keeps one array per donor
+        #cohort-wide, but ancestry is assigned per array, so a donor's kept
+        #array can sit in another batch — and a small batch can consist
+        #entirely of such left-out duplicates. Unguarded, that fails
+        #silently: bcftools only warns on an empty -S list, no HWE/MAF get
+        #computed, and the filter below drops every site, losing the whole
+        #batch from the final VCF. Fall back to all of the batch's samples,
+        #which are typically unrelated to each other (their kept partners
+        #are elsewhere), so nothing is double-counted
+        if [[ ! -s {output.stats_samples} ]]
+        then
+            echo "WARNING: no unrelated samples in this batch, using all samples for variant statistics" >> {log}
+            cp {output.batch_samples} {output.stats_samples}
+        fi
+
+        #Add tags, computed over the unrelated subset only; the genotypes are
+        #then dropped (-G) because annotate below only reads the INFO column
+        bcftools view -S {output.stats_samples} {input.vcf} 2>> {log} \
+            | bcftools +fill-tags 2>> {log} \
+            | bcftools view -G -Oz -o {output.unrel_tagged_vcf} 2>> {log}
+        bcftools index {output.unrel_tagged_vcf} 2>> {log}
+
+        #Transfer the unrelated-subset statistics onto the all-samples VCF, then
+        #filter rare and non-HWE variants and those with abnormal alleles and duplicates
+        bcftools annotate -a {output.unrel_tagged_vcf} -c INFO/HWE,INFO/MAF {input.vcf} 2>> {log} \
+            | bcftools filter -i 'INFO/HWE > {params.hwe} & F_MISSING < {params.missing} & MAF[0] > {params.maf}' \
             | bcftools filter -e 'REF="N" | REF="I" | REF="D"' \
             | bcftools filter -e "ALT='.'" \
             | bcftools norm -d all \
@@ -510,7 +556,7 @@ rule filter_exons_indels:
     log:
         logs/"filter_exons.indels.log"
     container:
-        "resources/imputation/SNP_imputation_1000g_hg38.sif"
+        config['deps']['container']
     shell:
         """
         out_vcf={output.vcf}

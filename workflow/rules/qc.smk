@@ -320,9 +320,18 @@ rule final_pruning: ### put in contingency for duplicated snps - remove from bot
 # data to catch cross-ancestry duplicates and sample swaps. Two plink2 passes
 # are needed because --king-cutoff prunes samples before --make-king-table
 # writes the .kin0, so combining them would silently truncate the report.
-# Upstream pfiles all set psam-cols=fid,..., so .king.cutoff.out.id is
-# guaranteed two-column FID/IID and the tail-append in rule separate_indivs
-# is safe.
+# Related samples are NOT removed from the cohort: the final VCF is used to
+# demultiplex pooled scRNA-seq, so every array a donor has must stay available
+# downstream. The .king.cutoff.in.id keep-list only defines the unrelated
+# subset that the variant statistics (HWE/MAF) are computed on (rule
+# export_unrelated_ids here, rule filter_preimpute_vcf in the imputation
+# workflow); the resulting filters are applied to all samples.
+
+# Pairs below king_table_cutoff never reach the .kin0 report, so the duplicate
+# grouping in rule export_sample_metadata is blind to anything under it
+assert float(config["params"]["king_duplicate_cutoff"]) >= float(config["params"]["king_table_cutoff"]), \
+    "king_duplicate_cutoff must be >= king_table_cutoff, or duplicate pairs are missing from the .kin0 report"
+
 rule relatedness_check:
     input:
         bed=rules.final_pruning.output.bed,
@@ -330,8 +339,10 @@ rule relatedness_check:
         fam=rules.final_pruning.output.fam
     output:
         kin0=out_dir/"relatedness/relatedness_check.kin0",
+        # .out.id is the complement plink2 writes alongside the keep-list; it
+        # has no consumer and is declared only so temp() cleans it up
         remove_id=temp(out_dir/"relatedness/relatedness_check.king.cutoff.out.id"),
-        in_id=temp(out_dir/"relatedness/relatedness_check.king.cutoff.in.id")
+        in_id=out_dir/"relatedness/relatedness_check.king.cutoff.in.id"
     params:
         king_cutoff=config["params"]["king_cutoff"],
         king_table_cutoff=config["params"]["king_table_cutoff"]
@@ -455,15 +466,16 @@ rule pca_projection_assign:
     script:
         "../scripts/PCA_Projection_Plotting.R"
 
+# No samples are removed by the sex and ancestry checks: the PCA/sex-check
+# script only ever marks mismatches UPDATE, and rule update_sex_ancestry
+# corrects the annotations (sex to the genotype-inferred value, ancestry to
+# the PCA assignment). KING-flagged relatives also stay in the cohort (see
+# the comment above rule relatedness_check).
 rule separate_indivs:
     input:
-        sexcheck=out_dir/"pca_sex_checks/check_sex_update_remove.tsv",
-        anc_check=out_dir/"pca_sex_checks/ancestry_update_remove.tsv",
-        king_remove=rules.relatedness_check.output.remove_id
+        sexcheck=out_dir/"pca_sex_checks/check_sex_update_remove.tsv"
     output:
-        update_sex=temp(out_dir/"separate_indivs/sex_update_indivs.tsv"),
-        remove_indiv=temp(out_dir/"separate_indivs/remove_indivs.tsv"),
-        remove_indiv_temp=temp(out_dir/"separate_indivs/remove_indivs_temp.tsv")
+        update_sex=temp(out_dir/"separate_indivs/sex_update_indivs.tsv")
     log:
         logs/"plink/separate_indivs.log"
     container:
@@ -474,15 +486,6 @@ rule separate_indivs:
             | awk 'BEGIN{{FS=OFS="\t"}}{{print($1,$2,$4)}}' \
             | sed 's/SNPSEX/SEX/g'\
             > {output.update_sex}
-        grep "REMOVE" {input.sexcheck} \
-            | awk 'BEGIN{{FS=OFS="\t"}}{{print($1,$2)}}'\
-            > {output.remove_indiv_temp}
-        grep "REMOVE" {input.anc_check} \
-            | awk 'BEGIN{{FS=OFS="\t"}}{{print($1,$2)}}' \
-            >> {output.remove_indiv_temp}
-        tail -n +2 {input.king_remove} \
-            >> {output.remove_indiv_temp}
-        sort -u {output.remove_indiv_temp} > {output.remove_indiv}
         """
 
 # This rule updates the psam file to include ancestry
@@ -533,8 +536,7 @@ rule update_sex_ancestry:
         pgen=out_dir/"update_prep/update_prep.pgen",
         pvar=out_dir/"update_prep/update_prep.pvar",
         psam=out_dir/"update_prep/update_prep.psam",
-        update_sex=out_dir/"separate_indivs/sex_update_indivs.tsv",
-        remove_indiv=out_dir/"separate_indivs/remove_indivs.tsv",
+        update_sex=out_dir/"separate_indivs/sex_update_indivs.tsv"
     output:
         pgen=final/"post_qc.pgen",
         pvar=final/"post_qc.pvar",
@@ -553,17 +555,46 @@ rule update_sex_ancestry:
         plink2 --threads {threads} \
             --pfile $in_prefix \
             --update-sex {input.update_sex} \
-            --remove {input.remove_indiv} \
             --make-pgen 'psam-cols='fid,parents,sex,phenos \
             --out $out_prefix
         mv ${{out_prefix}}.log {log}
         """
 
+# The unrelated subset that variant statistics are computed on downstream
+# (rule filter_preimpute_vcf in the imputation workflow). KING's keep-list is
+# intersected with the post-QC psam in case the two disagree on IDs, and
+# reduced to bare IIDs because that is what `bcftools view -S` expects. An
+# empty result would not stop the pipeline on its own — every batch would
+# quietly fall back to all-samples statistics — so fail here instead.
+rule export_unrelated_ids:
+    input:
+        in_id=rules.relatedness_check.output.in_id,
+        psam=rules.update_sex_ancestry.output.psam
+    output:
+        ids=final/"unrelated_sample_ids.txt"
+    log:
+        logs/"export_unrelated_ids.log"
+    shell:
+        """
+        awk 'BEGIN{{FS="\t"}} NR==FNR {{if (FNR>1) keep[$2]; next}} FNR>1 && ($2 in keep) {{print $2}}' \
+            {input.in_id} {input.psam} > {output.ids}
+        echo "$(wc -l < {output.ids}) of $(($(wc -l < {input.psam}) - 1)) post-QC samples are in the unrelated subset" > {log}
+        if [[ ! -s {output.ids} ]]
+        then
+            echo "ERROR: no post-QC samples matched the KING keep-list; check the ID columns of {input.in_id} and {input.psam}" >> {log}
+            exit 1
+        fi
+        """
+
 rule export_sample_metadata:
     input:
-        psam=final/"post_qc.psam"
+        psam=final/"post_qc.psam",
+        kin0=rules.relatedness_check.output.kin0,
+        smiss=rules.calculate_missingness.output.smiss
     output:
         csv=metadata_csv
+    params:
+        duplicate_cutoff=config["params"]["king_duplicate_cutoff"]
     run:
         psam_df = pd.read_csv(input.psam, sep="\t", dtype=str)
 
@@ -605,9 +636,32 @@ rule export_sample_metadata:
         df["reference_superpopulation"] = raw_anc.where(raw_anc.isin(ref_superpop_id_map), other=raw_anc)
         df["reference_superpopulation_id"] = raw_anc.map(ref_superpop_id_map)
 
+        # Samples at or above the duplicate kinship cutoff are the same donor
+        # (repeat arrays, identical twins) and share a kinship_group label so
+        # downstream demultiplexing can pick one sample per donor. Relatives
+        # below the cutoff are distinct donors and keep their own label. The
+        # label is the alphabetically first IID of the group, so it can change
+        # when a donor gains an array: a within-release grouping, not a stable
+        # donor ID. IDs are read as strings (dtype=str, matching the psam read
+        # above) so numeric-looking IIDs still match.
+        kin0 = pd.read_csv(input.kin0, sep="\t", dtype=str)
+        dup_pairs = kin0[kin0["KINSHIP"].astype(float) >= float(params.duplicate_cutoff)]
+        groups = {iid: {iid} for iid in df["IID"]}
+        for iid1, iid2 in zip(dup_pairs["IID1"], dup_pairs["IID2"]):
+            if iid1 in groups and iid2 in groups and groups[iid1] is not groups[iid2]:
+                merged = groups[iid1] | groups[iid2]
+                for member in merged:
+                    groups[member] = merged
+        df["kinship_group"] = [min(groups[iid]) for iid in df["IID"]]
+
+        # Genotyping call rate, as a basis for choosing among a donor's samples
+        smiss = pd.read_csv(input.smiss, sep="\t", dtype=str)
+        call_rate = dict(zip(smiss["IID"], 1 - smiss["F_MISS"].astype(float)))
+        df["genotype_call_rate"] = df["IID"].map(call_rate).round(6)
+
         # Rename and select final columns
         df = df.rename(columns={"IID": "gussid", "SEX": "sex"})
-        df = df[["gussid", "sex", "ancestry", "ancestry_id", "reference_superpopulation", "reference_superpopulation_id"]]
+        df = df[["gussid", "sex", "ancestry", "ancestry_id", "reference_superpopulation", "reference_superpopulation_id", "kinship_group", "genotype_call_rate"]]
 
         df.to_csv(output.csv, index=False)
 

@@ -17,5 +17,6 @@ refs:
 
 params:
   indiv_missingness_mind: 0.05
-  king_cutoff: 0.0884        # 2nd-degree+ relatives are removed
-  king_table_cutoff: 0.0442  # 3rd-degree+ pairs appear in the .kin0 report
+  king_cutoff: 0.0884          # 2nd-degree+ relatives are left out of the unrelated subset used for variant statistics
+  king_table_cutoff: 0.0442    # 3rd-degree+ pairs appear in the .kin0 report
+  king_duplicate_cutoff: 0.3   # same-donor threshold; rationale in README.md ("Related samples")
