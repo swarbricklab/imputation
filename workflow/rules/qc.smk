@@ -320,13 +320,12 @@ rule final_pruning: ### put in contingency for duplicated snps - remove from bot
 # data to catch cross-ancestry duplicates and sample swaps. Two plink2 passes
 # are needed because --king-cutoff prunes samples before --make-king-table
 # writes the .kin0, so combining them would silently truncate the report.
-# Related samples are NOT removed from the cohort. The final object exists to
-# genotype-demultiplex scRNA-seq pools, so every array a donor has must stay
-# available for selection downstream. The .king.cutoff.in.id keep-list only
-# defines the unrelated subset on which the frequency-based variant statistics
-# (HWE/MAF) are computed, via rule export_unrelated_ids and rule
-# filter_preimpute_vcf in the imputation workflow; the variant filters those
-# statistics justify are then applied to all samples.
+# Related samples are NOT removed from the cohort: the final VCF is used to
+# demultiplex pooled scRNA-seq, so every array a donor has must stay available
+# downstream. The .king.cutoff.in.id keep-list only defines the unrelated
+# subset that the variant statistics (HWE/MAF) are computed on (rule
+# export_unrelated_ids here, rule filter_preimpute_vcf in the imputation
+# workflow); the resulting filters are applied to all samples.
 
 # Pairs below king_table_cutoff never reach the .kin0 report, so the duplicate
 # grouping in rule export_sample_metadata is blind to anything under it
@@ -563,11 +562,10 @@ rule update_sex_ancestry:
 
 # The unrelated subset that variant statistics are computed on downstream
 # (rule filter_preimpute_vcf in the imputation workflow). KING's keep-list is
-# intersected with the post-QC psam as a guard against ID drift, and reduced
-# to bare IIDs because that is what `bcftools view -S` expects. An empty
-# intersection means that guard fired (or KING kept nobody), and downstream
-# would silently fall back to all-samples statistics everywhere, so fail here
-# instead.
+# intersected with the post-QC psam in case the two disagree on IDs, and
+# reduced to bare IIDs because that is what `bcftools view -S` expects. An
+# empty result would not stop the pipeline on its own — every batch would
+# quietly fall back to all-samples statistics — so fail here instead.
 rule export_unrelated_ids:
     input:
         in_id=rules.relatedness_check.output.in_id,
@@ -639,13 +637,13 @@ rule export_sample_metadata:
         df["reference_superpopulation_id"] = raw_anc.map(ref_superpop_id_map)
 
         # Samples at or above the duplicate kinship cutoff are the same donor
-        # (repeat arrays, MZ twins), and share a kinship_group label so
+        # (repeat arrays, identical twins) and share a kinship_group label so
         # downstream demultiplexing can pick one sample per donor. Relatives
         # below the cutoff are distinct donors and keep their own label. The
-        # label is the lexicographically first IID of the group, so it can
-        # change when a donor gains an array: an opaque within-release
-        # grouping, not a stable donor key. IDs are read as strings (dtype=str,
-        # matching the psam read above) so numeric-looking IIDs still match.
+        # label is the alphabetically first IID of the group, so it can change
+        # when a donor gains an array: a within-release grouping, not a stable
+        # donor ID. IDs are read as strings (dtype=str, matching the psam read
+        # above) so numeric-looking IIDs still match.
         kin0 = pd.read_csv(input.kin0, sep="\t", dtype=str)
         dup_pairs = kin0[kin0["KINSHIP"].astype(float) >= float(params.duplicate_cutoff)]
         groups = {iid: {iid} for iid in df["IID"]}

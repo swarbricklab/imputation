@@ -198,19 +198,18 @@ rule vcf_fixref_hg38:
         bcftools index {output.vcf} 2>> {log}
         """
 
-# The frequency-based variant statistics (HWE, MAF) are computed on the
-# cohort's unrelated subset only, because duplicate samples pseudo-replicate
-# genotypes and distort them. The resulting per-site tags are transferred onto
-# the all-samples VCF with bcftools annotate (matched on CHROM/POS/REF/ALT),
-# so the variant filter applies to every sample and related samples stay in
-# the output for downstream demultiplexing to choose from. F_MISSING is not a
-# tag but evaluated from the genotypes at filter time, deliberately over all
-# samples: per-variant missingness is a probe-quality metric and every array
-# is an independent observation of it, duplicates included.
-# Caveat: a site whose only minor-allele carriers were excluded by KING has
-# subset MAF 0 and is dropped for everyone. Harmless while every exclusion is
-# a same-donor duplicate (only duplicate-discordant sites are lost), but a
-# true relative pair in the cohort would lose its private markers.
+# HWE and MAF are computed on the cohort's unrelated subset only, so that a
+# donor's repeat arrays are not counted twice. The per-site values are then
+# copied onto the all-samples VCF with bcftools annotate (matched on
+# CHROM/POS/REF/ALT), so every sample goes through the same variant filter
+# and related samples stay in the output. F_MISSING is not a tag but
+# evaluated from the genotypes at filter time, deliberately over all samples:
+# missingness measures probe quality, and every array is an independent
+# observation of it.
+# Caveat: a site whose only minor-allele carriers sit outside the unrelated
+# subset has subset MAF 0 and is dropped for everyone. Harmless while every
+# excluded sample is a same-donor duplicate, but a true relative pair would
+# lose its private variants.
 rule filter_preimpute_vcf:
     input:
         vcf=out_dir/"vcf_fixref_hg38/{ancestry}_fixref_hg38.vcf.gz",
@@ -242,9 +241,9 @@ rule filter_preimpute_vcf:
         awk 'NR==FNR {{keep[$1]; next}} ($1 in keep)' {input.unrelated} {output.batch_samples} > {output.stats_samples}
         echo "$(wc -l < {output.stats_samples}) of $(wc -l < {output.batch_samples}) samples used for variant statistics" > {log}
 
-        #A batch can hold no unrelated members (a donor whose kept representative
-        #was assigned another ancestry); fall back to all samples over computing
-        #statistics on nothing
+        #A batch can have no unrelated members (a donor's arrays can land in
+        #different ancestry batches); fall back to all of the batch's samples
+        #rather than compute statistics on nothing
         if [[ ! -s {output.stats_samples} ]]
         then
             echo "WARNING: no unrelated samples in this batch, using all samples for variant statistics" >> {log}
