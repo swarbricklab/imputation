@@ -241,9 +241,15 @@ rule filter_preimpute_vcf:
         awk 'NR==FNR {{keep[$1]; next}} ($1 in keep)' {input.unrelated} {output.batch_samples} > {output.stats_samples}
         echo "$(wc -l < {output.stats_samples}) of $(wc -l < {output.batch_samples}) samples used for variant statistics" > {log}
 
-        #A batch can have no unrelated members (a donor's arrays can land in
-        #different ancestry batches); fall back to all of the batch's samples
-        #rather than compute statistics on nothing
+        #The stats list can be empty: KING keeps one array per donor
+        #cohort-wide, but ancestry is assigned per array, so a donor's kept
+        #array can sit in another batch — and a small batch can consist
+        #entirely of such left-out duplicates. Unguarded, that fails
+        #silently: bcftools only warns on an empty -S list, no HWE/MAF get
+        #computed, and the filter below drops every site, losing the whole
+        #batch from the final VCF. Fall back to all of the batch's samples,
+        #which are typically unrelated to each other (their kept partners
+        #are elsewhere), so nothing is double-counted
         if [[ ! -s {output.stats_samples} ]]
         then
             echo "WARNING: no unrelated samples in this batch, using all samples for variant statistics" >> {log}
