@@ -46,23 +46,50 @@ the patterns established there.
 
 ### 4. Public reference data (issue #22) — the main Goal-1 reproducibility blocker
 The QC and imputation references are private `dvc import`s from
-`Swarbricklab/references.git` (no public URL). This is the exact problem
-genotyping solved for GRCh38 (rebuild from a public source via `dvc import-url`,
-verify byte-/variant-equivalence). Replace each with a public source:
+`Swarbricklab/references.git`. But those are a **repackaging of a public
+bundle**: the sceQTL-Gen consortium / Powell Lab distribute the whole imputation
+reference set as `eQTLGenImpRef.tar.gz` (see the upstream
+[wiki](https://github.com/powellgenomicslab/SNP_imputation_1000g_hg38/wiki/SNP-Genotype-Imputation-Using-1000G-hg38-Reference)).
+So most of the private refs can be re-sourced from **one** public download.
 
-| Config key | Current (private) | Public source to use |
+**Verified-live public sources** (checked 2026-09):
+
+- **`eQTLGenImpRef.tar.gz`** — `https://www.dropbox.com/s/l60a2r3e4vo78mn/eQTLGenImpRef.tar.gz?dl=1`
+  (md5: `https://www.dropbox.com/s/eci808v0uepqgcz/eQTLGenImpRef.tar.gz.md5?dl=1`).
+  Unpacks to `hg38/` with `imputation/` (Minimac4 ref), `phasing/genetic_map/`
+  (Eagle maps), `phasing/phasing_reference/`, `ref_genome_QC/` (GRCh38 primary
+  assembly), `ref_panel_QC/` (the 30x-GRCh38 panel). This one bundle supplies
+  **five** of the refs below.
+- The monolithic container `SNP_imputation_1000g_hg38.sif` is also public —
+  `https://www.dropbox.com/s/mwjpndpclp6njcg/SNP_imputation_1000g_hg38.sif?dl=1`
+  (relevant to #20/#23: pin/record it from this source).
+
+| Config key | Current (private) | Public source |
 |---|---|---|
-| `refs.1000g.*` (QC ancestry) | `resources/1000g/all_phase3_filtered.*` | 1000G phase 3 plink files (public; document the filtering) |
-| `refs.vcf` (imputation ref panel) | `resources/genomes/hg38/ref_panel_QC/30x-GRCh38_NoSamplesSorted.vcf.gz` | 1000G **30x GRCh38** panel (public) |
-| `refs.hg38_int_fa` | `.../ref_genome_QC/Homo_sapiens.GRCh38.dna.primary_assembly.fa` | Ensembl GRCh38 primary assembly (as genotyping did) |
-| `refs.hg38_chr_fai` | `resources/genomes/refdata-gex-GRCh38-2020-A/fasta/genome.fa.fai` | **Same private 10x genome genotyping just retired** — reuse genotyping's public GRCh38 build |
-| `refs.genetic_map` | `.../phasing/genetic_map/genetic_map_hg38_withX.txt.gz` | Eagle genetic maps (public) |
-| `refs.phasing` | `.../phasing/phasing_reference/` | 1000G phasing reference (public) |
-| `refs.impute` | `resources/reference/hg38/imputation` | Minimac4 1000G reference (public) |
-| `refs.bed` | `resources/bed/hg38exonsUCSC.bed` | UCSC exon BED (public) |
-| `refs.*chr_map*` | `resources/genomes/chr_map/*` | small, ship in-repo or regenerate |
-- [ ] Verify variant-level equivalence after each swap (the technique used for
-      genotyping: reconstruct/compare, ignore header-only differences).
+| `refs.vcf` (imputation ref panel) | `…/hg38/ref_panel_QC/30x-GRCh38_NoSamplesSorted.vcf.gz` | **eQTLGenImpRef bundle** → `hg38/ref_panel_QC/` |
+| `refs.hg38_int_fa` | `…/hg38/ref_genome_QC/Homo_sapiens.GRCh38.dna.primary_assembly.fa` | **eQTLGenImpRef bundle** → `hg38/ref_genome_QC/` |
+| `refs.genetic_map` | `…/hg38/phasing/genetic_map/…` | **eQTLGenImpRef bundle** → `hg38/phasing/genetic_map/` |
+| `refs.phasing` | `…/hg38/phasing/phasing_reference/` | **eQTLGenImpRef bundle** → `hg38/phasing/phasing_reference/` |
+| `refs.impute` | `resources/reference/hg38/imputation` | **eQTLGenImpRef bundle** → `hg38/imputation/` |
+| `refs.hg38_chr_fai` | `…/refdata-gex-GRCh38-2020-A/fasta/genome.fa.fai` | prefer the bundle's `ref_genome_QC` FASTA `.fai` (or genotyping's public GRCh38) — **verify contigs match what the panel expects** |
+| `refs.1000g.*` (QC ancestry) | `resources/1000g/all_phase3_filtered.*` | 1000G phase-3 plink (public; document the exact filtering) — **not in the bundle** |
+| `refs.bed` | `resources/bed/hg38exonsUCSC.bed` | UCSC exon BED (public `dvc import-url`) |
+| `refs.*chr_map*` | `resources/genomes/chr_map/*` | small; ship in-repo or regenerate |
+
+**Recipe** (belongs in the super-project, where the data lives — see the brca rewire):
+```bash
+# fetch on a data-mover node (internet-capable queue)
+qx exec --internet --env dt3 -P a56 --storage gdata/a56+scratch/a56 \
+  -- dvc import-url 'https://www.dropbox.com/s/l60a2r3e4vo78mn/eQTLGenImpRef.tar.gz?dl=1' \
+     resources/imputation/eQTLGenImpRef.tar.gz
+# then a dvc stage extracts hg38/ into the paths the config expects
+```
+- [ ] **In progress:** the bundle is downloading via `qx --internet` to
+      `/scratch/a56/jr9959/imputation_refs_staging` for an md5 check and an
+      equivalence comparison against the current private import before switching
+      provenance.
+- [ ] Verify equivalence after each swap (genotyping technique: compare, ignore
+      byte-/header-only differences), then rewire config + `dvc.yaml`.
 
 ### 5. Harmonisation with genotyping (shared front-end; issue #26 in genotyping)
 - [x] Switch the nested `profiles/global` submodule URL **ssh → https** (public).
