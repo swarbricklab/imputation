@@ -1,0 +1,54 @@
+# NOTE (draft): the author list below is copied from the genotyping workflow as a
+# starting point, since these workflows share the same lab and manuscript. It MUST
+# be reviewed for imputation-specific contributors before release. The upstream
+# method (see the README provenance section) originates with the Powell Lab /
+# sceQTL-Gen consortium and is cited there rather than as authors of this repo.
+# version, date-released and the Zenodo DOI are added at release time.
+cff-version: 1.2.0
+message: "If you use this workflow, please cite it using the metadata below."
+title: "imputation: a genotype QC and 1000 Genomes imputation Snakemake workflow"
+abstract: >-
+  A Snakemake workflow that takes measured genotypes (VCF) and performs quality
+  control (SNP filtering, sex and ancestry checks against a 1000 Genomes
+  reference) and imputation of missing variants against a 1000 Genomes reference
+  panel, followed by filtering to produce SNP profiles suitable for
+  single-cell demultiplexing with Demuxafy. Adapted from the Powell Lab /
+  sceQTL-Gen consortium imputation pipeline.
+type: software
+authors:
+  - given-names: John
+    family-names: Reeves
+    affiliation: "Garvan Institute of Medical Research"
+    alias: johnyaku
+    orcid: "https://orcid.org/0000-0001-7368-7489"
+  - given-names: James
+    family-names: Douglas
+    affiliation: "Garvan Institute of Medical Research"
+    alias: jd-garv
+    orcid: "https://orcid.org/0009-0004-2559-026X"
+  - given-names: Nenad
+    family-names: Bartonicek
+    affiliation: "Peter MacCallum Cancer Centre"
+    alias: nbartonicek
+    orcid: "https://orcid.org/0000-0003-2144-1887"
+  - given-names: Daniel
+    family-names: Roden
+    alias: dlroden
+    orcid: "https://orcid.org/0000-0003-2393-5805"
+  - given-names: Alexander
+    family-names: Swarbrick
+    affiliation: "Garvan Institute of Medical Research"
+    orcid: "https://orcid.org/0000-0002-3051-5676"
+repository-code: "https://github.com/swarbricklab/imputation"
+url: "https://github.com/swarbricklab/imputation"
+license: MIT
+keywords:
+  - imputation
+  - "1000 Genomes"
+  - genotype QC
+  - plink
+  - Minimac4
+  - Eagle
+  - Snakemake
+  - VCF
+  - demultiplexing
