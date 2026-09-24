@@ -86,11 +86,10 @@ published to GHCR/Docker Hub (no public biocontainer exists — build one, as
 discussed). Pin every tag.
 
 ### 7. Keep imputation permissive; move the tunable threshold to snp_demux (#24)
-`rule vcf_filter` (postimputation.smk) hardcodes
-`bcftools filter --include 'MAF>=0.05 & R2>=0.3'` **and** bakes the thresholds
-into output filenames. Change to:
+`rule filter_maf_r2` (imputation.smk) hardcodes `R2 > 0.8` on imputed sites
+(MAF is already set by `post_maf`). Change to:
 - carry `INFO/R2` (and MAF) through unfiltered, or apply only a permissive floor;
-- parameterise `R2`/`MAF` in config (no thresholds in filenames);
+- parameterise `R2` in config;
 - move the operational, tunable R² cut to `snp_demux` (see snp_demux #37), so a
   demux parameter sweep does not require re-running imputation.
 
