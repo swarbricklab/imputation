@@ -41,7 +41,8 @@ the patterns established there.
 - [ ] The monolithic `SNP_imputation_1000g_hg38.sif` is opaque. As a Goal-1
       *minimum*, record the exact version of every tool it bundles (bcftools,
       plink/plink2, vcftools, Minimac4, Eagle, GenotypeHarmonizer, CrossMap,
-      Java) and its build provenance, so runs are reproducible and documented.
+      Java, R + tidyverse/ggpubr/cluster/RColorBrewer/dplyr) and its build
+      provenance, so runs are reproducible and documented.
       (Full graduation to per-tool images is Goal 2 / issue #23.)
 
 ### 4. Public reference data (issue #22) — the main Goal-1 reproducibility blocker
@@ -86,11 +87,10 @@ published to GHCR/Docker Hub (no public biocontainer exists — build one, as
 discussed). Pin every tag.
 
 ### 7. Keep imputation permissive; move the tunable threshold to snp_demux (#24)
-`rule vcf_filter` (postimputation.smk) hardcodes
-`bcftools filter --include 'MAF>=0.05 & R2>=0.3'` **and** bakes the thresholds
-into output filenames. Change to:
+`rule filter_maf_r2` (imputation.smk) hardcodes `R2 > 0.8` on imputed sites
+(MAF is already set by `post_maf`). Change to:
 - carry `INFO/R2` (and MAF) through unfiltered, or apply only a permissive floor;
-- parameterise `R2`/`MAF` in config (no thresholds in filenames);
+- parameterise `R2` in config;
 - move the operational, tunable R² cut to `snp_demux` (see snp_demux #37), so a
   demux parameter sweep does not require re-running imputation.
 

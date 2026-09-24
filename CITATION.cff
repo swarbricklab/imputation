@@ -11,8 +11,8 @@ message: "If you use this workflow, please cite it using the metadata below."
 title: "imputation: a genotype QC and 1000 Genomes imputation Snakemake workflow"
 abstract: >-
   A Snakemake workflow that takes measured genotypes (VCF) and performs quality
-  control (SNP filtering, sex and ancestry checks against a 1000 Genomes
-  reference) and imputation of missing variants against a 1000 Genomes reference
+  control (sample filtering, a sex check, and ancestry checks against a 1000
+  Genomes reference) and imputation of missing variants against a 1000 Genomes reference
   panel, followed by filtering to produce SNP profiles suitable for single-cell
   demultiplexing with Demuxafy. Much of the pipeline is adapted directly from the
   Powell Lab / sceQTL-Gen consortium imputation workflow (see references).
@@ -40,7 +40,7 @@ authors:
   - given-names: Victor
     family-names: Liu
     affiliation: "Garvan Institute of Medical Research"
-    alias: vliu378
+    alias: VictorrLiu
     orcid: "https://orcid.org/0009-0008-7628-7825"
   - given-names: Alexander
     family-names: Swarbrick
@@ -92,4 +92,4 @@ references:
     journal: "eLife"
     volume: 9
     doi: "10.7554/eLife.52155"
-    notes: "sceQTL-Gen consortium; origin of the upstream imputation approach."
+    notes: "sceQTL-Gen consortium; the single-cell eQTL reference approach."

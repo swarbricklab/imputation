@@ -7,10 +7,11 @@ them for single-cell demultiplexing by quality-controlling the calls and
 
 It contains two workflows that run in sequence:
 
-1. **QC** (`Snakefile_qc`, `rules/qc.smk`) — filters SNPs, and checks reported
-   sex and assigns ancestry by comparison against a 1000 Genomes reference.
-2. **Imputation** (`Snakefile_imputation`, `rules/imputation.smk`,
-   `rules/postimputation.smk`) — lifts the genotypes to GRCh38, harmonises and
+1. **QC** (`Snakefile_qc`, `rules/qc.smk`) — filters samples (missingness,
+   relatedness), checks reported sex, and assigns ancestry by comparison against
+   a 1000 Genomes reference.
+2. **Imputation** (`Snakefile_imputation`, `rules/imputation.smk`) — lifts the
+   genotypes to GRCh38, harmonises and
    fixes reference alleles, phases, imputes missing variants against a 1000
    Genomes reference panel, and filters the result (MAF, imputation R², exonic
    regions) to produce SNP profiles.
@@ -27,7 +28,8 @@ assign cells to donors in multiplexed 10x Chromium pools.
 
 ## Inputs (from `genotyping`)
 
-- **VCF** — genotype calls for all samples (hg19 for QC, hg38 for imputation)
+- **VCF** — genotype calls for all samples (hg19 for QC; hg38 for imputation,
+  used only for chrX/chrY)
 - **psam** — a sample description file for `plink`
 - **id map** — maps original sample ids to the `plink`-safe ids in the `.psam`
 
@@ -49,8 +51,10 @@ The rules drive standard population-genetics tooling:
 
 | Step | Tool |
 |------|------|
-| VCF manipulation, reference fixing | `bcftools` (incl. `+fixref`, `+liftover`) |
-| QC, ancestry, format conversion | `plink` / `plink2`, `vcftools` |
+| VCF manipulation, reference fixing | `bcftools` (incl. `+fixref`) |
+| QC, ancestry, format conversion | `plink` / `plink2` |
+| Heterozygosity stats; indel and exon filtering | `vcftools` |
+| Ancestry assignment, heterozygosity filter | R |
 | Liftover hg19 → GRCh38 | `CrossMap` |
 | Strand/allele harmonisation | `GenotypeHarmonizer` |
 | Phasing | `Eagle` |
