@@ -21,6 +21,14 @@ else
     global_profile=""
 fi
 
+# Preflight: verify references, tools and inputs are present before submitting
+# jobs. Set SKIP_PREFLIGHT=1 to bypass.
+if [[ -z "${SKIP_PREFLIGHT:-}" ]]; then
+    modules/$module/prep.sh --what check --configfile config/$module/config_imputation.yaml
+else
+    echo "SKIP_PREFLIGHT set -- skipping the dependency preflight."
+fi
+
 snakemake $global_profile $workflow_profile \
     --snakefile modules/$module/workflow/Snakefile_imputation \
     --configfile config/$module/config_imputation.yaml \

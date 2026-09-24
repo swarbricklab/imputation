@@ -23,6 +23,15 @@ else
 fi
 
 # QC
+# Preflight: verify references, tools and inputs are present before running.
+# Set SKIP_PREFLIGHT=1 to bypass.
+if [[ -z "${SKIP_PREFLIGHT:-}" ]]; then
+    ./prep.sh --what check --configfile config/test_qc.yaml
+    ./prep.sh --what check --configfile config/test_imputation.yaml
+else
+    echo "SKIP_PREFLIGHT set -- skipping the dependency preflight."
+fi
+
 snakemake $global_profile $workflow_profile \
     --snakefile workflow/Snakefile_qc \
     --configfile config/test_qc.yaml \
