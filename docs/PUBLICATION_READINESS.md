@@ -84,14 +84,21 @@ qx exec --internet --env dt3 -P a56 --storage gdata/a56+scratch/a56 \
      resources/imputation/eQTLGenImpRef.tar.gz
 # then a dvc stage extracts hg38/ into the paths the config expects
 ```
-- [x] Bundle **downloaded** via `qx --internet` (copyq, ~37 min, 36 GB) to
-      `/scratch/a56/jr9959/imputation_refs_staging` and **md5-verified** against
-      the published checksum (`88e3603933a21712a7403023c1f2e9df`) — confirms it is
-      the canonical public reference.
-- [ ] Next: `dvc import-url` the bundle + an extraction stage; equivalence-check
-      the extracted tree against the current private import (genotyping technique:
-      compare, ignore byte-/header-only differences); then rewire config +
-      `dvc.yaml` in the super-project (task: brca rewire).
+- [x] Bundle **tracked via `dvc import-url`** from the public source (fetched on
+      a data-mover node with `qx --internet`, ~36 GB): `resources/eQTLGenImpRef.tar.gz.dvc`.
+      Out md5 `88e3603933a21712a7403023c1f2e9df` matches the published checksum —
+      byte-identical to the canonical public reference, so equivalence to the old
+      private import holds by construction (the private import was extracted from
+      this same bundle).
+- [x] **`prep.sh`** extracts the bundle into the config paths
+      (`resources/genomes/hg38/{phasing,ref_genome_QC,ref_panel_QC}`,
+      `resources/reference/hg38/imputation`).
+- [x] Retired the two private imports the bundle covers: `resources/reference.dvc`
+      (79 GB Minimac4 ref) and `resources/genomes/hg38.dvc` (44 GB panel/phasing/QC).
+- [ ] `dvc push` the bundle to the imputation remote (data-mover).
+- [ ] **`bed` and `1000g` remain private** — not in the bundle; need their public
+      sources confirmed before switching (won't fabricate URLs). `chr_map` is tiny
+      (ship in-repo). Then rewire config + `dvc.yaml` in the super-project (brca rewire).
 
 ### 5. Harmonisation with genotyping (shared front-end; issue #26 in genotyping)
 - [x] Switch the nested `profiles/global` submodule URL **ssh → https** (public).
