@@ -41,7 +41,8 @@ the patterns established there.
 - [ ] The monolithic `SNP_imputation_1000g_hg38.sif` is opaque. As a Goal-1
       *minimum*, record the exact version of every tool it bundles (bcftools,
       plink/plink2, vcftools, Minimac4, Eagle, GenotypeHarmonizer, CrossMap,
-      Java) and its build provenance, so runs are reproducible and documented.
+      Java, R + tidyverse/ggpubr/cluster/RColorBrewer/dplyr) and its build
+      provenance, so runs are reproducible and documented.
       (Full graduation to per-tool images is Goal 2 / issue #23.)
 
 ### 4. Public reference data (issue #22) — the main Goal-1 reproducibility blocker

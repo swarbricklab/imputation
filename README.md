@@ -28,7 +28,8 @@ assign cells to donors in multiplexed 10x Chromium pools.
 
 ## Inputs (from `genotyping`)
 
-- **VCF** — genotype calls for all samples (hg19 for QC; hg38 for imputation, used only for chrX/chrY)
+- **VCF** — genotype calls for all samples (hg19 for QC; hg38 for imputation,
+  used only for chrX/chrY)
 - **psam** — a sample description file for `plink`
 - **id map** — maps original sample ids to the `plink`-safe ids in the `.psam`
 
@@ -52,7 +53,7 @@ The rules drive standard population-genetics tooling:
 |------|------|
 | VCF manipulation, reference fixing | `bcftools` (incl. `+fixref`) |
 | QC, ancestry, format conversion | `plink` / `plink2` |
-| Heterozygosity, indel and exon filtering | `vcftools` |
+| Heterozygosity stats; indel and exon filtering | `vcftools` |
 | Ancestry assignment, heterozygosity filter | R |
 | Liftover hg19 → GRCh38 | `CrossMap` |
 | Strand/allele harmonisation | `GenotypeHarmonizer` |
