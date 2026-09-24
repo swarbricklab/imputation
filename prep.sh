@@ -36,8 +36,9 @@ set -euo pipefail
 force="false"
 [[ "${1:-}" == "--force" ]] && force="true"
 
-here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$here"
+# All paths below are relative to the current directory, so run this from the top
+# of the repo (standalone) or of the super-project that mounts it as a module --
+# the same place you run run_qc.sh / run_imputation.sh.
 
 # --- eQTLGen imputation reference bundle -----------------------------------
 bundle="resources/eQTLGenImpRef.tar.gz"
