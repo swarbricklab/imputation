@@ -1,0 +1,95 @@
+# NOTE (draft): the author list is still under review before release. Beata Myler
+# and Victor Liu are added here per the shared genotyping author set. The Powell
+# Lab / sceQTL-Gen legacy that much of this workflow is adapted from is credited
+# in the `references:` block below (and in the abstract), which is the standard
+# way to credit derived work -- rather than by listing its authors as authors of
+# this repo. If the lab wants to list upstream contributors (e.g. Drew Neavin) as
+# co-authors, that should be agreed with them first. version/date-released and the
+# Zenodo DOI are added at release time.
+cff-version: 1.2.0
+message: "If you use this workflow, please cite it using the metadata below."
+title: "imputation: a genotype QC and 1000 Genomes imputation Snakemake workflow"
+abstract: >-
+  A Snakemake workflow that takes measured genotypes (VCF) and performs quality
+  control (SNP filtering, sex and ancestry checks against a 1000 Genomes
+  reference) and imputation of missing variants against a 1000 Genomes reference
+  panel, followed by filtering to produce SNP profiles suitable for single-cell
+  demultiplexing with Demuxafy. Much of the pipeline is adapted directly from the
+  Powell Lab / sceQTL-Gen consortium imputation workflow (see references).
+type: software
+authors:
+  - given-names: John
+    family-names: Reeves
+    affiliation: "Garvan Institute of Medical Research"
+    alias: johnyaku
+    orcid: "https://orcid.org/0000-0001-7368-7489"
+  - given-names: James
+    family-names: Douglas
+    affiliation: "Garvan Institute of Medical Research"
+    alias: jd-garv
+    orcid: "https://orcid.org/0009-0004-2559-026X"
+  - given-names: Daniel
+    family-names: Roden
+    alias: dlroden
+    orcid: "https://orcid.org/0000-0003-2393-5805"
+  - given-names: Beata
+    family-names: Myler
+    affiliation: "Adelaide University"
+    alias: BeataKiedik
+    orcid: "https://orcid.org/0000-0001-8517-5253"
+  - given-names: Victor
+    family-names: Liu
+    affiliation: "Garvan Institute of Medical Research"
+    alias: vliu378
+    orcid: "https://orcid.org/0009-0008-7628-7825"
+  - given-names: Alexander
+    family-names: Swarbrick
+    affiliation: "Garvan Institute of Medical Research"
+    orcid: "https://orcid.org/0000-0002-3051-5676"
+repository-code: "https://github.com/swarbricklab/imputation"
+url: "https://github.com/swarbricklab/imputation"
+license: MIT
+keywords:
+  - imputation
+  - "1000 Genomes"
+  - genotype QC
+  - plink
+  - Minimac4
+  - Eagle
+  - Snakemake
+  - VCF
+  - demultiplexing
+references:
+  - type: software
+    title: "SNP_imputation_1000g_hg38: SNP imputation on the 1000 Genomes hg38 reference"
+    authors:
+      - given-names: Drew
+        family-names: Neavin
+        affiliation: "Powell Genomics Laboratory"
+    repository-code: "https://github.com/powellgenomicslab/SNP_imputation_1000g_hg38"
+    url: "https://github.com/powellgenomicslab/SNP_imputation_1000g_hg38"
+    notes: >-
+      Upstream Powell Lab / sceQTL-Gen WG1 pipeline. Much of this workflow's
+      imputation logic is adapted directly from it.
+  - type: article
+    title: >-
+      Demuxafy: improvement in droplet assignment by integrating multiple
+      single-cell demultiplexing and doublet detection methods
+    authors:
+      - given-names: Drew
+        family-names: Neavin
+    year: 2024
+    journal: "Genome Biology"
+    volume: 25
+    doi: "10.1186/s13059-024-03224-8"
+    notes: "The downstream demultiplexing framework these SNP profiles feed."
+  - type: article
+    title: "The single-cell eQTLGen consortium"
+    authors:
+      - given-names: "Monique G. P."
+        family-names: "van der Wijst"
+    year: 2020
+    journal: "eLife"
+    volume: 9
+    doi: "10.7554/eLife.52155"
+    notes: "sceQTL-Gen consortium; origin of the upstream imputation approach."
