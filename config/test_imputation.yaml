@@ -11,7 +11,7 @@ outs:
 refs:
   vcf: resources/genomes/hg38/ref_panel_QC/30x-GRCh38_NoSamplesSorted.vcf.gz
   hg38_int_fa: resources/genomes/hg38/ref_genome_QC/Homo_sapiens.GRCh38.dna.primary_assembly.fa
-  hg38_chr_fai: resources/genomes/refdata-gex-GRCh38-2020-A/fasta/genome.fa.fai
+  hg38_chr_fai: resources/genomes/GRCh38_chr.fai
   genetic_map: resources/genomes/hg38/phasing/genetic_map/genetic_map_hg38_withX.txt.gz
   phasing: resources/genomes/hg38/phasing/phasing_reference/
   impute: resources/reference/hg38/imputation

@@ -1,0 +1,12 @@
+md5: 65192fe1c79d4633ee742306756c740b
+frozen: true
+deps:
+- checksum: 1630912466643406d
+  size: 97465507
+  hash: md5
+  path: https://www.dropbox.com/s/fvd4pl8no3ngg0l/hg38exonsUCSC.bed?dl=1
+outs:
+- md5: c323d4fb5da690ca6352a7ee8a14e022
+  size: 97465507
+  hash: md5
+  path: hg38exonsUCSC.bed
