@@ -84,12 +84,14 @@ qx exec --internet --env dt3 -P a56 --storage gdata/a56+scratch/a56 \
      resources/imputation/eQTLGenImpRef.tar.gz
 # then a dvc stage extracts hg38/ into the paths the config expects
 ```
-- [ ] **In progress:** the bundle is downloading via `qx --internet` to
-      `/scratch/a56/jr9959/imputation_refs_staging` for an md5 check and an
-      equivalence comparison against the current private import before switching
-      provenance.
-- [ ] Verify equivalence after each swap (genotyping technique: compare, ignore
-      byte-/header-only differences), then rewire config + `dvc.yaml`.
+- [x] Bundle **downloaded** via `qx --internet` (copyq, ~37 min, 36 GB) to
+      `/scratch/a56/jr9959/imputation_refs_staging` and **md5-verified** against
+      the published checksum (`88e3603933a21712a7403023c1f2e9df`) — confirms it is
+      the canonical public reference.
+- [ ] Next: `dvc import-url` the bundle + an extraction stage; equivalence-check
+      the extracted tree against the current private import (genotyping technique:
+      compare, ignore byte-/header-only differences); then rewire config +
+      `dvc.yaml` in the super-project (task: brca rewire).
 
 ### 5. Harmonisation with genotyping (shared front-end; issue #26 in genotyping)
 - [x] Switch the nested `profiles/global` submodule URL **ssh → https** (public).
