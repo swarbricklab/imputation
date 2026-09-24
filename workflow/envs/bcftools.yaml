@@ -1,0 +1,5 @@
+# bcftools (incl. bgzip/tabix and the +fixref plugin). Pinned to the version the
+# retired SNP_imputation_1000g_hg38.sif shipped, to preserve behaviour.
+channels: [conda-forge, bioconda]
+dependencies:
+  - bioconda::bcftools=1.10.2

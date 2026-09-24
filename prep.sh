@@ -1,11 +1,11 @@
 #! /bin/bash
 
-# Prepare the imputation reference data from its public sources.
+# Prepare the imputation reference data and the two non-bioconda tools from
+# their public sources.
 #
-# Two reference archives are tracked publicly via `dvc import-url` (see the
-# README and resources/*.dvc). This script extracts them into the paths the
-# workflow config expects. Run it once, after `dvc pull` has fetched the
-# archives.
+# Everything below is tracked publicly via `dvc import-url` (see the README and
+# resources/**/*.dvc). This script unpacks the archives into the paths the
+# workflow config / rules expect. Run it once, after `dvc pull`.
 #
 #   resources/eQTLGenImpRef.tar.gz  (sceQTL-Gen / Powell Lab bundle, ~36 GB) ->
 #       resources/genomes/hg38/{phasing,ref_genome_QC,ref_panel_QC}
@@ -13,6 +13,12 @@
 #
 #   resources/1000G.tar.gz          (1000 Genomes phase-3 plink, ancestry QC) ->
 #       resources/1000g/all_phase3_filtered.{pgen,pvar,psam}
+#
+# Tools not on bioconda (every other tool comes from a conda env, workflow/envs/):
+#   resources/tools/GenotypeHarmonizer-1.4.23-dist.tar.gz ->
+#       resources/tools/GenotypeHarmonizer-1.4.23/GenotypeHarmonizer.jar  (run on openjdk)
+#   resources/tools/minimac4-1.0.2-Linux.sh -> resources/tools/minimac4   (static binary;
+#       bioconda only ships Minimac4 4.x, which needs .msav not our 1.x .m3vcf panel)
 #
 # Usage:
 #   dvc pull                 # fetch resources/*.tar.gz (and the exon BED)
@@ -92,6 +98,43 @@ else
     done
     rm -rf "$tmp"; trap - EXIT
     echo "  -> resources/1000g/all_phase3_filtered.{pgen,pvar,psam} ($moved files)"
+fi
+
+# --- Tools that are not on bioconda (provisioned from public releases) ------
+# GenotypeHarmonizer (Java jar) and Minimac4 1.0.2 (static binary) are tracked
+# via dvc import-url (resources/tools/*.dvc) and unpacked here. Every other tool
+# comes from a conda env (workflow/envs/); GenotypeHarmonizer runs on the
+# openjdk env and Minimac4 is a static binary.
+gh="resources/tools/GenotypeHarmonizer-1.4.23-dist.tar.gz"
+if [[ ! -s "$gh" ]]; then
+    echo "ERROR: $gh is not present. Fetch it first: dvc pull $gh.dvc" >&2
+    exit 1
+fi
+if [[ "$force" == "true" || ! -s resources/tools/GenotypeHarmonizer-1.4.23/GenotypeHarmonizer.jar ]]; then
+    echo "Unpacking GenotypeHarmonizer ..."
+    tar xzf "$gh" -C resources/tools
+    [[ -s resources/tools/GenotypeHarmonizer-1.4.23/GenotypeHarmonizer.jar ]] \
+        || { echo "ERROR: GenotypeHarmonizer.jar not found after unpacking $gh" >&2; exit 1; }
+    echo "  -> resources/tools/GenotypeHarmonizer-1.4.23/GenotypeHarmonizer.jar"
+fi
+
+mm="resources/tools/minimac4-1.0.2-Linux.sh"
+if [[ ! -s "$mm" ]]; then
+    echo "ERROR: $mm is not present. Fetch it first: dvc pull $mm.dvc" >&2
+    exit 1
+fi
+if [[ "$force" == "true" || ! -x resources/tools/minimac4 ]]; then
+    echo "Installing Minimac4 1.0.2 ..."
+    inst="$(mktemp -d resources/tools/.mm4.XXXXXX)"
+    trap 'rm -rf "$inst"' EXIT
+    # self-extracting CMake installer
+    bash "$mm" --skip-license --prefix="$inst" > /dev/null
+    bin="$(find "$inst" -type f -name minimac4 | head -1)"
+    [[ -n "$bin" ]] || { echo "ERROR: minimac4 binary not found after installing $mm" >&2; exit 1; }
+    cp "$bin" resources/tools/minimac4
+    chmod +x resources/tools/minimac4
+    rm -rf "$inst"; trap - EXIT
+    echo "  -> resources/tools/minimac4"
 fi
 
 echo "Done."

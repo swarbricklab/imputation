@@ -1,0 +1,5 @@
+# vcftools (+ bcftools/bgzip for rules that use both)
+channels: [conda-forge, bioconda]
+dependencies:
+  - bioconda::vcftools=0.1.16
+  - bioconda::bcftools=1.10.2

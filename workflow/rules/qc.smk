@@ -25,8 +25,8 @@ rule run_plink:
         pvar=temp(out_dir/"plink/plink.pvar")
     log:
         logs/"plink/run_plink.log"
-    container:
-        config['deps']['container']
+    conda:
+        "../envs/plink.yaml"
     shell:
         """
         pgen={output.pgen}
@@ -49,8 +49,8 @@ rule calculate_missingness:
         smiss=out_dir/"indiv_missingness/sample_missingness.smiss"
     log:
         logs/"plink/calculate_missingness.log"
-    container:
-        config['deps']['container']
+    conda:
+        "../envs/plink.yaml"
     shell:
         """
         in_pgen={input.pgen}
@@ -78,8 +78,8 @@ rule indiv_missingness:
        mind = config["params"]["indiv_missingness_mind"]
     log:
         logs/"plink/indiv_missingness.log"
-    container:
-        config['deps']['container']
+    conda:
+        "../envs/plink.yaml"
     shell:
         """
         in_pgen={input.pgen}
@@ -109,8 +109,8 @@ rule check_sex:
         no=temp(out_dir/"check_sex/check_sex.nosex")
     log:
         logs/"plink/check_sex.log"
-    container:
-        config['deps']['container']
+    conda:
+        "../envs/plink.yaml"
     shell:
         """
         in_pgen={input.pgen}
@@ -172,8 +172,8 @@ rule extract_common_snps:
         psam_1000g=temp(out_dir/"common_snps/subset_1000g.psam")
     log:
         logs/"plink/extract_common_snps.log"
-    container:
-        config['deps']['container']
+    conda:
+        "../envs/plink.yaml"
     shell:
         """
         exec > {log} 2>&1
@@ -232,8 +232,8 @@ rule prune_1000g:
         SNPs2keep=temp(out_dir/"common_snps/SNPs2keep.txt")
     log:
         logs/"plink/prune_1000g.log"
-    container:
-        config['deps']['container']
+    conda:
+        "../envs/plink.yaml"
     shell:
         """
         eval > {log} 2>&1
@@ -300,8 +300,8 @@ rule final_pruning: ### put in contingency for duplicated snps - remove from bot
         fam=temp(out_dir/"common_snps/final_subset_pruned_data.psam")
     log:
         logs/"plink/final_pruning.log"
-    container:
-        config['deps']['container']
+    conda:
+        "../envs/plink.yaml"
     shell:
         """
         in_pgen={input.bed}
@@ -337,8 +337,8 @@ rule relatedness_check:
         king_table_cutoff=config["params"]["king_table_cutoff"]
     log:
         logs/"plink/relatedness_check.log"
-    container:
-        config['deps']['container']
+    conda:
+        "../envs/plink.yaml"
     shell:
         """
         in_pgen={input.bed}
@@ -375,8 +375,8 @@ rule pca_1000g:
         eig=temp(out_dir/"pca_projection/subset_pruned_1000g_pcs.eigenval")
     log:
         logs/"plink/pca_1000g.log"
-    container:
-        config['deps']['container']
+    conda:
+        "../envs/plink.yaml"
     shell:
         """
         in_pgen={input.pgen_1000g}
@@ -407,8 +407,8 @@ rule pca_project:
         projected_1000g_scores=temp(out_dir/"pca_projection/subset_pruned_1000g_pcs_projected.sscore")
     log:
         logs/"plink/pca_project.log"
-    container:
-        config['deps']['container']
+    conda:
+        "../envs/plink.yaml"
     shell:
         """
         in_pgen={input.pgen}
@@ -448,8 +448,8 @@ rule pca_projection_assign:
         sexcheck=temp(out_dir/"pca_sex_checks/check_sex_update_remove.tsv"),
         anc_check=temp(out_dir/"pca_sex_checks/ancestry_update_remove.tsv"),
         plot=out_dir/"pca_sex_checks/Ancestry_PCAs.png"
-    container:
-        config['deps']['container']
+    conda:
+        "../envs/r.yaml"
     log:
         logs/"pca_projection_assign.log"
     script:
@@ -466,8 +466,8 @@ rule separate_indivs:
         remove_indiv_temp=temp(out_dir/"separate_indivs/remove_indivs_temp.tsv")
     log:
         logs/"plink/separate_indivs.log"
-    container:
-        config['deps']['container']
+    conda:
+        "../envs/plink.yaml"
     shell:
         """
         grep "UPDATE" {input.sexcheck} \
@@ -541,8 +541,8 @@ rule update_sex_ancestry:
         psam=final/"post_qc.psam"
     log:
         logs/"update_sex_ancestry.log"
-    container:
-        config['deps']['container']
+    conda:
+        "../envs/plink.yaml"
     shell:
         """
         in_pgen={input.pgen}

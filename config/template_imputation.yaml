@@ -2,7 +2,6 @@ deps:
   input_vcf: data/snp/genotyping/donors.hg38.vcf.gz
   post_qc_plink: data/snp/plink_qc
   id_map: data/snp/genotyping/id_map.tsv
-  container: resources/imputation/SNP_imputation_1000g_hg38.sif
 
 outs:
   results: data/snp/imputation

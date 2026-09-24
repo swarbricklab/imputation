@@ -1,0 +1,7 @@
+# vcftools --het + R (scripts/filter_het.R uses tidyverse + magrittr)
+channels: [conda-forge, bioconda]
+dependencies:
+  - bioconda::vcftools=0.1.16
+  - conda-forge::r-base=4.3
+  - conda-forge::r-tidyverse
+  - conda-forge::r-magrittr

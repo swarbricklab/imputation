@@ -2,7 +2,6 @@ deps:
   input_vcf: test/data/test.hg38.vcf.gz
   post_qc_plink: test/results/post_qc
   id_map: test/data/id_map.tsv
-  container: resources/imputation/SNP_imputation_1000g_hg38.sif
 
 outs:
   results: test/results/imputation

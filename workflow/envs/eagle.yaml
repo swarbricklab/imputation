@@ -1,0 +1,4 @@
+# Eagle 2.4.1 pre-phasing (bioconda package name: eagle2)
+channels: [conda-forge, bioconda]
+dependencies:
+  - bioconda::eagle2=2.4.1

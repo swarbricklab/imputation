@@ -1,0 +1,6 @@
+# Runtime for the Minimac4 1.0.2 static binary (provisioned by prep.sh from a
+# public dvc import-url; bioconda only ships Minimac4 4.x, which requires .msav
+# references, whereas this pipeline uses the 1.x .m3vcf reference panel).
+channels: [conda-forge]
+dependencies:
+  - conda-forge::libgomp

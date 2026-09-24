@@ -1,0 +1,6 @@
+# CrossMap liftover (+ plink for the subset/convert steps in the same rule)
+channels: [conda-forge, bioconda]
+dependencies:
+  - bioconda::crossmap=0.6.6
+  - bioconda::plink2=2.00a5.10
+  - bioconda::plink=1.90b6.21
