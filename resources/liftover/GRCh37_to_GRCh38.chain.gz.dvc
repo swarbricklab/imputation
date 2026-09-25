@@ -1,0 +1,13 @@
+md5: b0033855a3c6dd4e00dc3baf642c6c8c
+frozen: true
+deps:
+- checksum: '"45a42-4ff04e40f4280"'
+  size: 285250
+  hash: md5
+  path: 
+    http://ftp.ensembl.org/pub/assembly_mapping/homo_sapiens/GRCh37_to_GRCh38.chain.gz
+outs:
+- md5: 2a862e70fa1afc08f1f3e7a8cc5cda14
+  size: 285250
+  hash: md5
+  path: GRCh37_to_GRCh38.chain.gz

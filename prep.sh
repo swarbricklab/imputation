@@ -18,6 +18,10 @@
 #   resources/tools/minimac4-1.0.2-Linux.sh -> resources/tools/minimac4  (static binary;
 #       bioconda only ships Minimac4 4.x, which needs .msav not our 1.x .m3vcf panel)
 #
+# The GRCh37->GRCh38 liftover chain (Ensembl assembly_mapping) is tracked the same
+# way but is used gzipped and in place -- no unpack step:
+#   resources/liftover/GRCh37_to_GRCh38.chain.gz  (CrossMap reads it directly)
+#
 # Usage:
 #   dvc pull                                          # fetch resources/**/*.dvc
 #   ./prep.sh                                         # unpack (default: --what all)
@@ -118,11 +122,13 @@ d = yaml.safe_load(open(sys.argv[1])) or {}
 sys.exit(0 if (d.get("refs") or {}).get("impute") else 1)
 PY
     then
-        echo "Tools (GenotypeHarmonizer, Minimac4 -- unpacked by prep.sh):"
+        echo "Tools and liftover chain (imputation stage):"
         local t
         for t in resources/tools/GenotypeHarmonizer-1.4.23/GenotypeHarmonizer.jar resources/tools/minimac4; do
             [[ -s "$t" ]] && ok "$t" || bad "missing: $t -- run './prep.sh' to unpack"
         done
+        local chain="resources/liftover/GRCh37_to_GRCh38.chain.gz"
+        [[ -s "$chain" ]] && ok "$chain" || bad "missing: $chain -- 'dvc pull $chain.dvc'"
         echo
     fi
 

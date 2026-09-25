@@ -55,7 +55,7 @@ rule crossmap:
         excluded_ids=temp(out_dir/"crossmapped/{ancestry}_excluded_ids.txt"),
         unmap=temp(out_dir/"crossmapped/{ancestry}_crossmap_output.bed.unmap")
     params:
-        chain_file = "/opt/GRCh37_to_GRCh38.chain"
+        chain_file = "resources/liftover/GRCh37_to_GRCh38.chain.gz"
     conda:
         "../envs/crossmap.yaml"
     log:
@@ -216,7 +216,7 @@ rule filter_preimpute_vcf:
     shell:
         """
         #Add tags
-        export BCFTOOLS_PLUGINS=/opt/bcftools-1.10.2/plugins
+        export BCFTOOLS_PLUGINS="$CONDA_PREFIX/libexec/bcftools"
         bcftools +fill-tags {input.vcf} -Oz -o {output.tagged_vcf} 2> {log}
 
         #Filter rare and non-HWE variants and those with abnormal alleles and duplicates
