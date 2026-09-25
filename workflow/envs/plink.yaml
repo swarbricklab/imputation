@@ -1,5 +1,5 @@
 # plink1.9 + plink2 (QC / subsetting / PCA rules)
 channels: [conda-forge, bioconda]
 dependencies:
-  - bioconda::plink2=2.00a5.10
+  - bioconda::plink2=2.00a3.7
   - bioconda::plink=1.90b6.21
