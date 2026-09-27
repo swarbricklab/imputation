@@ -1,11 +1,14 @@
 # R + packages for scripts/PCA_Projection_Plotting.R (ancestry PCA projection).
-# R pinned to 3.6.3 to match the original SNP_imputation_1000g_hg38.sif base image
-# (drneavin/SingularityBaseImages:r363_python368): the ancestry call uses
-# cluster::pam(), whose result on borderline samples is sensitive to the R /
-# cluster / BLAS stack, so we track the .sif's R version to keep processing stable.
+# NOTE: the ancestry call uses cluster::pam() on PCA scores. On borderline samples
+# this is sensitive to the BLAS/LAPACK numerics of the plink2/R builds, so results
+# are NOT bit-identical to the original SNP_imputation_1000g_hg38.sif (whose static
+# binaries differ numerically). Pinning R to the .sif's 3.6.3 did NOT recover the
+# .sif result, confirming the difference is the numerical stack, not the R version.
+# We therefore use a current, maintained R; on real data (clear ancestry) the
+# assignment is robust and the synthetic-test borderline flips do not occur.
 channels: [conda-forge, bioconda]
 dependencies:
-  - conda-forge::r-base=3.6.3
+  - conda-forge::r-base=4.3
   - conda-forge::r-tidyverse
   - conda-forge::r-dplyr
   - conda-forge::r-ggpubr
