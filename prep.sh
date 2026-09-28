@@ -35,10 +35,6 @@ cd "$here"
 
 # --- eQTLGen imputation reference bundle -----------------------------------
 bundle="resources/eQTLGenImpRef.tar.gz"
-if [[ ! -s "$bundle" ]]; then
-    echo "ERROR: $bundle is not present. Fetch it first: dvc pull $bundle.dvc" >&2
-    exit 1
-fi
 if [[ "$force" != "true" \
       && -d resources/reference/hg38/imputation \
       && -d resources/genomes/hg38/ref_panel_QC \
@@ -46,6 +42,12 @@ if [[ "$force" != "true" \
       && -d resources/genomes/hg38/ref_genome_QC ]]; then
     echo "eQTLGen reference already extracted."
 else
+    # Only require the tarball when extraction is actually needed, so the large
+    # tarballs can be deleted once the data is extracted.
+    if [[ ! -s "$bundle" ]]; then
+        echo "ERROR: $bundle is not present. Fetch it first: dvc pull $bundle.dvc (or dvc update $bundle.dvc)" >&2
+        exit 1
+    fi
     echo "Extracting $bundle (expands to ~120 GB) ..."
     tmp="$(mktemp -d resources/.eqtlgen.XXXXXX)"
     trap 'rm -rf "$tmp"' EXIT
@@ -66,16 +68,16 @@ fi
 
 # --- 1000 Genomes phase-3 plink (ancestry QC) ------------------------------
 kg="resources/1000G.tar.gz"
-if [[ ! -s "$kg" ]]; then
-    echo "ERROR: $kg is not present. Fetch it first: dvc pull $kg.dvc" >&2
-    exit 1
-fi
 if [[ "$force" != "true" \
       && -s resources/1000g/all_phase3_filtered.pgen \
       && -s resources/1000g/all_phase3_filtered.pvar \
       && -s resources/1000g/all_phase3_filtered.psam ]]; then
     echo "1000G reference already extracted."
 else
+    if [[ ! -s "$kg" ]]; then
+        echo "ERROR: $kg is not present. Fetch it first: dvc pull $kg.dvc (or dvc update $kg.dvc)" >&2
+        exit 1
+    fi
     echo "Extracting $kg ..."
     tmp="$(mktemp -d resources/.1000g.XXXXXX)"
     trap 'rm -rf "$tmp"' EXIT
