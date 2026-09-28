@@ -84,7 +84,12 @@ scores <- left_join(scores, data_anc %>% select(IID, Provided_Ancestry))
 print(head(scores))
 
 ##### Calculate Medoids and Assign Clusters #####
-pam_res <- pam(scores[,2:11], 6)
+# Cluster on the 10 principal components only. NB: positional `scores[,2:11]`
+# wrongly included the IID (character) column and dropped PC10; R 3.6 tolerated
+# the stray character column but R >= 4 clusters on noise, collapsing every
+# sample to the largest (EUR) cluster. Select the PC columns explicitly.
+pc_cols <- paste0("PC", 1:10)
+pam_res <- pam(scores[, pc_cols], 6)
 
 ##### Assign Ancestries to Individuals #####
 scores$Cluster <- factor(pam_res$clustering)
