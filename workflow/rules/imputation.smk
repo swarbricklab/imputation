@@ -465,7 +465,7 @@ rule reinsert_XY:
         auto_idx=rules.restore_vcf_header.output.idx
     output:
         order=temp(out_dir/"sample_order.txt"),
-        reordered_auto=temp(out_dir/"reordered_auto.vcf.gz"),
+        reordered_xy=temp(out_dir/"reordered_xy.vcf.gz"),
         vcf=temp(out_dir/"merged/imputed_hg38.vcf.gz"),
         index=temp(out_dir/"merged/imputed_hg38.vcf.gz.csi")
     log:
@@ -474,9 +474,14 @@ rule reinsert_XY:
         "docker://quay.io/biocontainers/bcftools:1.21--h8b25389_0"
     shell:
         """
-        bcftools query -l {input.xy} > {output.order}
-        bcftools view -S {output.order} -o {output.reordered_auto} {input.auto}
-        bcftools concat {output.reordered_auto} {input.xy} -Oz -o {output.vcf} 2> {log}
+        # The autosome branch can drop samples that the XY branch does not (e.g.
+        # the per-ancestry het filter), so the imputed autosomes are the source
+        # of truth for the surviving sample set. Derive the order from them and
+        # subset the XY records to match -- bcftools concat requires identical
+        # sample sets in identical order across the two inputs.
+        bcftools query -l {input.auto} > {output.order}
+        bcftools view -S {output.order} --force-samples -o {output.reordered_xy} {input.xy}
+        bcftools concat {input.auto} {output.reordered_xy} -Oz -o {output.vcf} 2> {log}
         bcftools index {output.vcf}  2>> {log}
         """
 
