@@ -263,13 +263,25 @@ rule het_filter:
     output:
         vcf=temp(out_dir/"het_filter/{ancestry}_het_filtered.vcf.gz"),
         index=temp(out_dir/"het_filter/{ancestry}_het_filtered.vcf.gz.csi")
+    params:
+        # Whether to REMOVE heterozygosity-rate outliers (>±3 SD within ancestry).
+        # Default False: outliers are still computed and flagged (see `het` -> the
+        # report), but ALL samples are kept. Low heterozygosity is expected for
+        # tumour-derived genotypes (LOH), so dropping those samples discards good
+        # donors -- harmful for demultiplexing. Set het_remove_outliers: true to
+        # restore the original sceQTL-Gen removing behaviour (blood/normal cohorts).
+        remove=bool(config['params'].get('het_remove_outliers', False))
     log:
         logs/"het_filter/het_filter_{ancestry}.log"
     conda:
         "../envs/bcftools.yaml"
     shell:
         """
-        bcftools view -S {input.passed_list} {input.vcf} -Oz -o {output.vcf} 2> {log}
+        if [ "{params.remove}" = "True" ]; then
+            bcftools view -S {input.passed_list} {input.vcf} -Oz -o {output.vcf} 2> {log}
+        else
+            bcftools view {input.vcf} -Oz -o {output.vcf} 2> {log}
+        fi
 
         #Index the output file
         bcftools index {output.vcf} 2>> {log}

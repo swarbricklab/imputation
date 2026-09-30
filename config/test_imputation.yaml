@@ -30,3 +30,8 @@ params:
     # Minimum MAF applied in post-imputation filtering
     post_maf: 0.01
 
+    # Remove heterozygosity-rate outliers (>±3 SD within ancestry group)?
+    # false (default): flag them in the report but KEEP all samples. Low het is
+    # expected for tumour-derived genotypes (LOH); dropping harms demultiplexing.
+    # true: original sceQTL-Gen behaviour (suited to blood/normal cohorts).
+    het_remove_outliers: false
