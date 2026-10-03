@@ -56,10 +56,12 @@ The rules drive standard population-genetics tooling:
 | Phasing | `Eagle` |
 | Imputation | `Minimac4` |
 
-> **Version pinning is in progress.** Most rules currently run inside a single
-> monolithic image (`SNP_imputation_1000g_hg38.sif`) whose exact tool versions
-> are not yet recorded here; a subset already use pinned public biocontainers
-> (e.g. `bcftools:1.21`). See issues #20 and #23.
+> **Tools are public and version-pinned.** The former monolithic image
+> (`SNP_imputation_1000g_hg38.sif`) has been retired in favour of per-rule conda
+> environments (`workflow/envs/`), each pinning a public, versioned tool; a few
+> rules use pinned public biocontainers (e.g. `bcftools:1.21`). The two tools with
+> no bioconda package (GenotypeHarmonizer, Minimac4 1.0.2) are fetched from public
+> GitHub releases via `dvc import-url`. See issue #23.
 
 ## Reference data and provenance
 
@@ -71,6 +73,8 @@ access to any private registry:
   imputation reference, 1000 Genomes 30x-GRCh38 phasing/panel, GRCh38 QC FASTA)
 - `resources/1000G.tar.gz` — 1000 Genomes phase-3 plink (ancestry QC)
 - `resources/bed/hg38exonsUCSC.bed` — hg38 exon BED
+- `resources/liftover/GRCh37_to_GRCh38.chain.gz` — Ensembl GRCh37→GRCh38 liftover chain
+- `resources/tools/` — GenotypeHarmonizer and Minimac4 (tools with no bioconda package)
 - `resources/genomes/chr_map/`, `resources/genomes/GRCh38_chr.fai` — small, git-tracked
 
 Fetch, then extract into the paths the config/rules expect:
@@ -80,9 +84,12 @@ Fetch, then extract into the paths the config/rules expect:
 dvc pull
 # Or, without remote access, re-download straight from the public source URLs:
 dvc update resources/eQTLGenImpRef.tar.gz.dvc resources/1000G.tar.gz.dvc \
-           resources/bed/hg38exonsUCSC.bed.dvc
+           resources/bed/hg38exonsUCSC.bed.dvc \
+           resources/liftover/GRCh37_to_GRCh38.chain.gz.dvc \
+           resources/tools/GenotypeHarmonizer-1.4.23-dist.tar.gz.dvc \
+           resources/tools/minimac4-1.0.2-Linux.sh.dvc
 
-./prep.sh    # extract the archives into place (~120 GB); tarballs can then be deleted
+./prep.sh    # extract the archives into place (~160 GB); tarballs can then be deleted
 ```
 
 This workflow was **adapted from the Powell Lab / sceQTL-Gen consortium

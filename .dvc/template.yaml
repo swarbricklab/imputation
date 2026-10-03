@@ -7,7 +7,6 @@
       - data/snp/genotyping/donors.hg19.vcf.gz
       - data/snp/genotyping/donors.psam
       - data/snp/genotyping/id_map.tsv
-      - resources/imputation/SNP_imputation_1000g_hg38.sif
       - resources/1000g/
     outs:
       - data/snp/plink_qc
@@ -24,6 +23,7 @@
       - resources/genomes/hg38/ref_panel_QC/30x-GRCh38_NoSamplesSorted.vcf.gz
       - resources/genomes/hg38/ref_genome_QC/Homo_sapiens.GRCh38.dna.primary_assembly.fa
       - resources/genomes/GRCh38_chr.fai
+      - resources/liftover/GRCh37_to_GRCh38.chain.gz
       - resources/genomes/hg38/phasing/genetic_map/genetic_map_hg38_withX.txt.gz
       - resources/genomes/hg38/phasing/phasing_reference/
       - resources/reference/hg38/imputation

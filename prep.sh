@@ -156,8 +156,8 @@ if [[ "$force" != "true" \
       && -d resources/genomes/hg38/ref_genome_QC ]]; then
     echo "eQTLGen reference already extracted."
 else
-    # Only require the tarball when extraction is actually needed, so the large
-    # tarballs can be deleted once the data is extracted.
+    # Only the tarball is required when extraction is actually needed -- so it is
+    # safe to delete the (large) tarballs once the data is extracted.
     if [[ ! -s "$bundle" ]]; then
         echo "ERROR: $bundle is not present. Fetch it first: dvc pull $bundle.dvc (or dvc update $bundle.dvc)" >&2
         exit 1
@@ -209,11 +209,11 @@ fi
 
 # --- Tools that are not on bioconda (provisioned from public releases) ------
 gh="resources/tools/GenotypeHarmonizer-1.4.23-dist.tar.gz"
-if [[ ! -s "$gh" ]]; then
-    echo "ERROR: $gh is not present. Fetch it first: dvc pull $gh.dvc" >&2
-    exit 1
-fi
 if [[ "$force" == "true" || ! -s resources/tools/GenotypeHarmonizer-1.4.23/GenotypeHarmonizer.jar ]]; then
+    if [[ ! -s "$gh" ]]; then
+        echo "ERROR: $gh is not present. Fetch it first: dvc pull $gh.dvc (or dvc update $gh.dvc)" >&2
+        exit 1
+    fi
     echo "Unpacking GenotypeHarmonizer ..."
     tar xzf "$gh" -C resources/tools
     [[ -s resources/tools/GenotypeHarmonizer-1.4.23/GenotypeHarmonizer.jar ]] \
@@ -222,11 +222,11 @@ if [[ "$force" == "true" || ! -s resources/tools/GenotypeHarmonizer-1.4.23/Genot
 fi
 
 mm="resources/tools/minimac4-1.0.2-Linux.sh"
-if [[ ! -s "$mm" ]]; then
-    echo "ERROR: $mm is not present. Fetch it first: dvc pull $mm.dvc" >&2
-    exit 1
-fi
 if [[ "$force" == "true" || ! -x resources/tools/minimac4 ]]; then
+    if [[ ! -s "$mm" ]]; then
+        echo "ERROR: $mm is not present. Fetch it first: dvc pull $mm.dvc (or dvc update $mm.dvc)" >&2
+        exit 1
+    fi
     echo "Installing Minimac4 1.0.2 ..."
     inst="$(mktemp -d resources/tools/.mm4.XXXXXX)"
     trap 'rm -rf "$inst"' EXIT
