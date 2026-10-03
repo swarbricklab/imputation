@@ -1,0 +1,12 @@
+md5: edc1fb3ecd7220734f6469710a9ab411
+frozen: true
+deps:
+- checksum: 1616581683542183d
+  size: 1728887570
+  hash: md5
+  path: https://www.dropbox.com/s/xso2vt3p9h2rh8m/1000G.tar.gz?dl=1
+outs:
+- md5: 77e1141441b2b443519249d331dab5ae
+  size: 1728887570
+  hash: md5
+  path: 1000G.tar.gz

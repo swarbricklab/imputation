@@ -1,0 +1,12 @@
+md5: b75d0e59ff87fe16f1256427948764f6
+frozen: true
+deps:
+- checksum: 1630631559424064d
+  size: 38232031775
+  hash: md5
+  path: https://www.dropbox.com/s/l60a2r3e4vo78mn/eQTLGenImpRef.tar.gz?dl=1
+outs:
+- md5: 88e3603933a21712a7403023c1f2e9df
+  size: 38232031775
+  hash: md5
+  path: eQTLGenImpRef.tar.gz

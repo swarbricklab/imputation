@@ -23,7 +23,7 @@
       - data/snp/genotyping/id_map.tsv
       - resources/genomes/hg38/ref_panel_QC/30x-GRCh38_NoSamplesSorted.vcf.gz
       - resources/genomes/hg38/ref_genome_QC/Homo_sapiens.GRCh38.dna.primary_assembly.fa
-      - resources/genomes/refdata-gex-GRCh38-2020-A/fasta/genome.fa.fai
+      - resources/genomes/GRCh38_chr.fai
       - resources/genomes/hg38/phasing/genetic_map/genetic_map_hg38_withX.txt.gz
       - resources/genomes/hg38/phasing/phasing_reference/
       - resources/reference/hg38/imputation

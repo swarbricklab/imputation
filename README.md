@@ -63,10 +63,27 @@ The rules drive standard population-genetics tooling:
 
 ## Reference data and provenance
 
-The QC and imputation reference data (1000 Genomes panels, the GRCh38 reference,
-Eagle genetic maps, and the Minimac4 imputation reference) currently come from a
-private lab registry. Sourcing them from their public origins is tracked in
-issue #22.
+All reference data is **public** and tracked via `dvc import-url` from public
+sources (see the `.dvc` files under `resources/`), so it can be fetched without
+access to any private registry:
+
+- `resources/eQTLGenImpRef.tar.gz` — sceQTL-Gen / Powell Lab bundle (Minimac4
+  imputation reference, 1000 Genomes 30x-GRCh38 phasing/panel, GRCh38 QC FASTA)
+- `resources/1000G.tar.gz` — 1000 Genomes phase-3 plink (ancestry QC)
+- `resources/bed/hg38exonsUCSC.bed` — hg38 exon BED
+- `resources/genomes/chr_map/`, `resources/genomes/GRCh38_chr.fai` — small, git-tracked
+
+Fetch, then extract into the paths the config/rules expect:
+
+```bash
+# If you have access to the project's DVC remote:
+dvc pull
+# Or, without remote access, re-download straight from the public source URLs:
+dvc update resources/eQTLGenImpRef.tar.gz.dvc resources/1000G.tar.gz.dvc \
+           resources/bed/hg38exonsUCSC.bed.dvc
+
+./prep.sh    # extract the archives into place (~120 GB); tarballs can then be deleted
+```
 
 This workflow was **adapted from the Powell Lab / sceQTL-Gen consortium
 imputation pipeline**
