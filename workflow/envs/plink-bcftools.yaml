@@ -1,0 +1,5 @@
+# plink2 export + bcftools/bgzip (plink_to_vcf)
+channels: [conda-forge, bioconda]
+dependencies:
+  - bioconda::plink2=2.00a3.7
+  - bioconda::bcftools=1.10.2

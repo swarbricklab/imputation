@@ -2,7 +2,6 @@ deps:
   input_vcf: data/snp/genotyping/donors.hg38.vcf.gz
   post_qc_plink: data/snp/plink_qc
   id_map: data/snp/genotyping/id_map.tsv
-  container: resources/imputation/SNP_imputation_1000g_hg38.sif
 
 outs:
   results: data/snp/imputation
@@ -28,5 +27,8 @@ params:
     chunk_length: 40
     # Minimum MAF (=Minor Allele Frequency) applied in preimputation filtering
     pre_maf:  0.0
-    # Minimum MAF applied in post-imputation filtering
-    post_maf: 0.01
+    # Minimum MAF applied in post-imputation filtering. 0.05 reproduces the retired
+    # .sif / upstream (which hard-coded MAF >= 0.05 here). 0.01 is a planned, more
+    # permissive setting held back until the pipeline reproduces the golden output
+    # (see docs/UPSTREAM_DIFFERENCES.md).
+    post_maf: 0.05

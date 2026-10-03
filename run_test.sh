@@ -23,12 +23,27 @@ else
 fi
 
 # QC
+# Preflight (QC): verify references and inputs before running. SKIP_PREFLIGHT=1 bypasses.
+if [[ -z "${SKIP_PREFLIGHT:-}" ]]; then
+    ./prep.sh --what check --configfile config/test_qc.yaml
+else
+    echo "SKIP_PREFLIGHT set -- skipping the QC preflight."
+fi
+
 snakemake $global_profile $workflow_profile \
     --snakefile workflow/Snakefile_qc \
     --configfile config/test_qc.yaml \
     $@
 
 # Imputation
+# Preflight (imputation): checked here, not above, because deps.post_qc_plink is
+# produced by the QC run. SKIP_PREFLIGHT=1 bypasses.
+if [[ -z "${SKIP_PREFLIGHT:-}" ]]; then
+    ./prep.sh --what check --configfile config/test_imputation.yaml
+else
+    echo "SKIP_PREFLIGHT set -- skipping the imputation preflight."
+fi
+
 snakemake $global_profile $workflow_profile \
     --snakefile workflow/Snakefile_imputation \
     --configfile config/test_imputation.yaml \

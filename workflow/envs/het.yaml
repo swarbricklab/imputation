@@ -1,0 +1,13 @@
+# vcftools --het + R (scripts/filter_het.R uses tidyverse + magrittr).
+# Uses a current, maintained R. The het-rate statistics (mean/SD and the +/-3 SD test)
+# are scalar operations, so the R/BLAS build does not affect them: vcftools --het output
+# is byte-identical to the retired .sif, and the only historical difference in the
+# "passed" sample list was a logic bug in the upstream filter_het.R (a malformed OR in
+# the het_pass subset that silently kept all low-heterozygosity outliers), which we fixed
+# in scripts/filter_het.R -- see docs/UPSTREAM_DIFFERENCES.md.
+channels: [conda-forge, bioconda]
+dependencies:
+  - bioconda::vcftools=0.1.16
+  - conda-forge::r-base=4.3
+  - conda-forge::r-tidyverse
+  - conda-forge::r-magrittr

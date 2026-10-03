@@ -20,8 +20,8 @@ rule subset_plink_by_ancestry:
         pvar=temp(out_dir/"subset_ancestry/{ancestry}_subset.pvar")
     log:
         logs/"subset_plink_by_ancestry/subset_{ancestry}.log"
-    container:
-        config['deps']['container']
+    conda:
+        "../envs/crossmap.yaml"
     shell:
         """
         in_pgen={input.pgen}
@@ -55,9 +55,9 @@ rule crossmap:
         excluded_ids=temp(out_dir/"crossmapped/{ancestry}_excluded_ids.txt"),
         unmap=temp(out_dir/"crossmapped/{ancestry}_crossmap_output.bed.unmap")
     params:
-        chain_file = "/opt/GRCh37_to_GRCh38.chain"
-    container:
-        config['deps']['container']
+        chain_file = "resources/liftover/GRCh37_to_GRCh38.chain.gz"
+    conda:
+        "../envs/crossmap.yaml"
     log:
         logs/"crossmap/crossmap_{ancestry}.log"
     shell:
@@ -92,8 +92,8 @@ rule sort_bed:
         fam=temp(out_dir/"crossmapped_sorted/{ancestry}_crossmapped_sorted.fam")
     log:
         logs/"sort_bed/sort_bed_{ancestry}.log"
-    container:
-        config['deps']['container']
+    conda:
+        "../envs/plink.yaml"
     shell:
         """
         in_bed={input.bed}
@@ -123,12 +123,12 @@ rule harmonize_hg38:
         fam=temp(out_dir/"harmonize_hg38/{ancestry}.fam"),
         updates=temp(out_dir/"harmonize_hg38/{ancestry}_idUpdates.txt")
     params:
-        jar = "/opt/GenotypeHarmonizer-1.4.23/GenotypeHarmonizer.jar"
+        jar = "resources/tools/GenotypeHarmonizer-1.4.23/GenotypeHarmonizer.jar"
     log:
         harmonizer=logs/"harmonize_hg38/harmonize_hg38_{ancestry}.log",
         snp_log=logs/"harmonize_hg38/snpLog_{ancestry}.log"
-    container:
-        config['deps']['container']
+    conda:
+        "../envs/java.yaml"
     shell:
         """
         in_bed={input.bed}
@@ -157,8 +157,8 @@ rule plink_to_vcf:
         index=temp(out_dir/"harmonize_hg38/{ancestry}_harmonised_hg38.vcf.gz.csi")
     log:
         logs/"plink_to_vcf_{ancestry}.log"
-    container:
-        config['deps']['container']
+    conda:
+        "../envs/plink-bcftools.yaml"
     shell:
         """
         in_bed={input.bed}
@@ -188,8 +188,8 @@ rule vcf_fixref_hg38:
         index=temp(out_dir/"vcf_fixref_hg38/{ancestry}_fixref_hg38.vcf.gz.csi")
     log:
         logs/"vcf_fixref_hg38/fixref_{ancestry}.log"
-    container:
-        config['deps']['container']
+    conda:
+        "../envs/bcftools.yaml"
     shell:
         """
         bcftools +fixref {input.data_vcf} -- -f {input.fasta} -i {input.vcf} \
@@ -211,12 +211,12 @@ rule filter_preimpute_vcf:
         hwe=config["params"]["snp_hwe"]
     log:
         logs/"filter_preimpute_vcf/filter_{ancestry}.log"
-    container:
-        config['deps']['container']
+    conda:
+        "../envs/bcftools.yaml"
     shell:
         """
         #Add tags
-        export BCFTOOLS_PLUGINS=/opt/bcftools-1.10.2/plugins
+        export BCFTOOLS_PLUGINS="$CONDA_PREFIX/libexec/bcftools"
         bcftools +fill-tags {input.vcf} -Oz -o {output.tagged_vcf} 2> {log}
 
         #Filter rare and non-HWE variants and those with abnormal alleles and duplicates
@@ -242,9 +242,9 @@ rule het:
         passed=temp(out_dir/"het/{ancestry}_het_passed.inds"),
         passed_list=temp(out_dir/"het/{ancestry}_het_passed.txt")
     params:
-        script="/opt/SNP_imputation_1000g_hg38/Imputation/scripts/filter_het.R"
-    container:
-        config['deps']['container']
+        script=workflow.source_path("../scripts/filter_het.R")
+    conda:
+        "../envs/het.yaml"
     shell:
         """
         het={output.het}
@@ -263,13 +263,25 @@ rule het_filter:
     output:
         vcf=temp(out_dir/"het_filter/{ancestry}_het_filtered.vcf.gz"),
         index=temp(out_dir/"het_filter/{ancestry}_het_filtered.vcf.gz.csi")
+    params:
+        # Whether to REMOVE heterozygosity-rate outliers (>±3 SD within ancestry).
+        # Default False: outliers are still computed and flagged (see `het` -> the
+        # report), but ALL samples are kept. Low heterozygosity is expected for
+        # tumour-derived genotypes (LOH), so dropping those samples discards good
+        # donors -- harmful for demultiplexing. Set het_remove_outliers: true to
+        # restore the original sceQTL-Gen removing behaviour (blood/normal cohorts).
+        remove_outliers=bool(config['params'].get('het_remove_outliers', False))
     log:
         logs/"het_filter/het_filter_{ancestry}.log"
-    container:
-        config['deps']['container']
+    conda:
+        "../envs/bcftools.yaml"
     shell:
         """
-        bcftools view -S {input.passed_list} {input.vcf} -Oz -o {output.vcf} 2> {log}
+        if [ "{params.remove_outliers}" = "True" ]; then
+            bcftools view -S {input.passed_list} {input.vcf} -Oz -o {output.vcf} 2> {log}
+        else
+            bcftools view {input.vcf} -Oz -o {output.vcf} 2> {log}
+        fi
 
         #Index the output file
         bcftools index {output.vcf} 2>> {log}
@@ -285,8 +297,8 @@ rule calculate_missingness:
         individuals=temp(out_dir/"genotype_donor_annotation/{ancestry}_individuals.tsv")
     log:
         logs/"calculate_missingness/missingness_{ancestry}.log"
-    container:
-        config['deps']['container']
+    conda:
+        "../envs/vcftools.yaml"
     shell:
         """
         gunzip -c {input.filtered_vcf} \
@@ -309,8 +321,8 @@ rule split_by_chr:
         index=temp(out_dir/"split_by_chr/{ancestry}_chr_{chr}.vcf.gz.csi")
     log:
         logs/"split_by_chr/split_{ancestry}_chr{chr}.log"
-    container:
-        config['deps']['container']
+    conda:
+        "../envs/bcftools.yaml"
     shell:
         """
         bcftools view -r {wildcards.chr} {input.filtered_vcf} -Oz -o {output.vcf} 2> {log}
@@ -327,8 +339,8 @@ rule eagle_prephasing:
         vcf=temp(out_dir/"eagle_prephasing/{ancestry}_chr{chr}_phased.vcf.gz")
     log:
         logs/"eagle/eagle_prephasing_{ancestry}_chr{chr}.log"
-    container:
-        config['deps']['container']
+    conda:
+        "../envs/eagle.yaml"
     shell:
         """
         out_vcf={output.vcf}
@@ -350,12 +362,12 @@ rule minimac_imputation:
         vcf=temp(out_dir/"minimac_imputed/{ancestry}_chr{chr}.dose.vcf.gz"),
         info=temp(out_dir/"minimac_imputed/{ancestry}_chr{chr}.info")
     params:
-        minimac4 = "/opt/bin/minimac4",
+        minimac4 = "resources/tools/minimac4",
         chunk_length = config["params"]["chunk_length"]
     log:
         logs/"minimac/minimac_{ancestry}_chr{chr}.log"
-    container:
-        config['deps']['container']
+    conda:
+        "../envs/minimac4.yaml"
     shell:
         """
         out_vcf={output.vcf}
@@ -378,8 +390,8 @@ rule combine_vcfs_ancestry:
         ind=temp(out_dir/"vcf_merged_by_ancestries/{ancestry}_imputed_hg38.vcf.gz.csi")
     log:
         logs/"combine_vcfs_{ancestry}.log"
-    container:
-        config['deps']['container']
+    conda:
+        "../envs/bcftools.yaml"
     shell:
         """
         bcftools concat -Oz {input.vcfs} > {output.combined} 2> {log}
@@ -395,8 +407,8 @@ rule combine_vcfs_all:
         ind=temp(out_dir/"vcf_all_merged/imputed_hg38.vcf.gz.csi")
     log:
         logs/"combine_vcfs_all.log"
-    container:
-        config['deps']['container']
+    conda:
+        "../envs/bcftools.yaml"
     shell:
         """
         if [[ $(ls -l {input.vcfs} | wc -l) > 1 ]]
@@ -465,7 +477,7 @@ rule reinsert_XY:
         auto_idx=rules.restore_vcf_header.output.idx
     output:
         order=temp(out_dir/"sample_order.txt"),
-        reordered_auto=temp(out_dir/"reordered_auto.vcf.gz"),
+        reordered_xy=temp(out_dir/"reordered_xy.vcf.gz"),
         vcf=temp(out_dir/"merged/imputed_hg38.vcf.gz"),
         index=temp(out_dir/"merged/imputed_hg38.vcf.gz.csi")
     log:
@@ -474,9 +486,14 @@ rule reinsert_XY:
         "docker://quay.io/biocontainers/bcftools:1.21--h8b25389_0"
     shell:
         """
-        bcftools query -l {input.xy} > {output.order}
-        bcftools view -S {output.order} -o {output.reordered_auto} {input.auto}
-        bcftools concat {output.reordered_auto} {input.xy} -Oz -o {output.vcf} 2> {log}
+        # The autosome branch can drop samples that the XY branch does not (e.g.
+        # the per-ancestry het filter), so the imputed autosomes are the source
+        # of truth for the surviving sample set. Derive the order from them and
+        # subset the XY records to match -- bcftools concat requires identical
+        # sample sets in identical order across the two inputs.
+        bcftools query -l {input.auto} > {output.order}
+        bcftools view -S {output.order} --force-samples -o {output.reordered_xy} {input.xy}
+        bcftools concat {input.auto} {output.reordered_xy} -Oz -o {output.vcf} 2> {log}
         bcftools index {output.vcf}  2>> {log}
         """
 
@@ -509,8 +526,8 @@ rule filter_exons_indels:
         vcf=temp(out_dir/"filter_exons_indels/imputed_filtered_maf_r2.hg38.recode.vcf.gz")
     log:
         logs/"filter_exons.indels.log"
-    container:
-        "resources/imputation/SNP_imputation_1000g_hg38.sif"
+    conda:
+        "../envs/vcftools.yaml"
     shell:
         """
         out_vcf={output.vcf}
@@ -532,13 +549,19 @@ rule rename_chromosomes:
         map=config['refs']['int2chr'],
         fai=config['refs']['hg38_chr_fai']
     output:
-        tmp_vcf=out_dir/"temp.vcf",
+        tmp_vcf=temp(out_dir/"temp.vcf"),
         vcf=out_dir/"imputed_filtered.hg38.vcf.gz"
     log:
         logs/"rename_chromosomes.log"
     container:
         "docker://quay.io/biocontainers/bcftools:1.21--h8b25389_0"
     shell:
+        # bcftools sort + the chr-named --fai reheader give a naturally ordered VCF
+        # (chr1..chr22,chrX), not the string-sorted chr1,chr10,.. of the retired .sif.
+        # Strip ALL run-varying header metadata so reruns from identical inputs are
+        # byte-identical: Minimac's ##filedate, bcftools' "; Date=..." stamps, and the
+        # ##bcftools_*Command provenance lines (which embed per-run temp paths). See
+        # docs/UPSTREAM_DIFFERENCES.md.
         """
         bcftools annotate --rename-chrs {input.map} {input.vcf} \
             | bcftools view \
@@ -546,7 +569,7 @@ rule rename_chromosomes:
             > {output.tmp_vcf}
         bcftools reheader --fai {input.fai} {output.tmp_vcf} \
             | bcftools sort \
-            | sed 's/; Date=.*//g' \
+            | sed -e 's/; Date=.*//g' -e '/^##filedate/d' -e '/^##bcftools_/d' \
             | bgzip -c \
             > {output.vcf}
         bcftools index {output.vcf}
