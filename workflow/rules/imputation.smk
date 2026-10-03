@@ -270,14 +270,14 @@ rule het_filter:
         # tumour-derived genotypes (LOH), so dropping those samples discards good
         # donors -- harmful for demultiplexing. Set het_remove_outliers: true to
         # restore the original sceQTL-Gen removing behaviour (blood/normal cohorts).
-        remove=bool(config['params'].get('het_remove_outliers', False))
+        remove_outliers=bool(config['params'].get('het_remove_outliers', False))
     log:
         logs/"het_filter/het_filter_{ancestry}.log"
     conda:
         "../envs/bcftools.yaml"
     shell:
         """
-        if [ "{params.remove}" = "True" ]; then
+        if [ "{params.remove_outliers}" = "True" ]; then
             bcftools view -S {input.passed_list} {input.vcf} -Oz -o {output.vcf} 2> {log}
         else
             bcftools view {input.vcf} -Oz -o {output.vcf} 2> {log}
@@ -549,13 +549,19 @@ rule rename_chromosomes:
         map=config['refs']['int2chr'],
         fai=config['refs']['hg38_chr_fai']
     output:
-        tmp_vcf=out_dir/"temp.vcf",
+        tmp_vcf=temp(out_dir/"temp.vcf"),
         vcf=out_dir/"imputed_filtered.hg38.vcf.gz"
     log:
         logs/"rename_chromosomes.log"
     container:
         "docker://quay.io/biocontainers/bcftools:1.21--h8b25389_0"
     shell:
+        # bcftools sort + the chr-named --fai reheader give a naturally ordered VCF
+        # (chr1..chr22,chrX), not the string-sorted chr1,chr10,.. of the retired .sif.
+        # Strip ALL run-varying header metadata so reruns from identical inputs are
+        # byte-identical: Minimac's ##filedate, bcftools' "; Date=..." stamps, and the
+        # ##bcftools_*Command provenance lines (which embed per-run temp paths). See
+        # docs/UPSTREAM_DIFFERENCES.md.
         """
         bcftools annotate --rename-chrs {input.map} {input.vcf} \
             | bcftools view \
@@ -563,7 +569,7 @@ rule rename_chromosomes:
             > {output.tmp_vcf}
         bcftools reheader --fai {input.fai} {output.tmp_vcf} \
             | bcftools sort \
-            | sed 's/; Date=.*//g' \
+            | sed -e 's/; Date=.*//g' -e '/^##filedate/d' -e '/^##bcftools_/d' \
             | bgzip -c \
             > {output.vcf}
         bcftools index {output.vcf}
