@@ -373,7 +373,7 @@ rule eagle_prephasing:
             --geneticMapFile={input.map_file} \
             --chrom={wildcards.chr} \
             --outPrefix=$out_prefix \
-            --numThreads={threads} \
+            --numThreads={resources.threads} \
             > {log} 2>&1
         """
 
@@ -401,7 +401,7 @@ rule minimac_imputation:
             --prefix $out_prefix \
             --format GT,DS,GP \
             --noPhoneHome \
-            --cpus {threads} \
+            --cpus {resources.threads} \
             --ChunkLengthMb {params.chunk_length} \
             > {log} 2>&1
         """
