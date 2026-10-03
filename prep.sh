@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Prepare / check the imputation reference data and the two non-bioconda tools.
+# Prepare / check the imputation reference data (and the liftover chain).
 #
 # The reference archives and tools are tracked publicly via `dvc import-url` (see
 # the README and resources/**/*.dvc). This script unpacks them into the paths the
@@ -13,10 +13,8 @@
 #       resources/reference/hg38/imputation           (Minimac4 reference)
 #   resources/1000G.tar.gz          (1000 Genomes phase-3 plink, ancestry QC) ->
 #       resources/1000g/all_phase3_filtered.{pgen,pvar,psam}
-#   resources/tools/GenotypeHarmonizer-1.4.23-dist.tar.gz ->
-#       resources/tools/GenotypeHarmonizer-1.4.23/GenotypeHarmonizer.jar (run on openjdk)
-#   resources/tools/minimac4-1.0.2-Linux.sh -> resources/tools/minimac4  (static binary;
-#       bioconda only ships Minimac4 4.x, which needs .msav not our 1.x .m3vcf panel)
+# (GenotypeHarmonizer and Minimac4 are no longer provisioned here -- they ship inside
+#  the per-rule container images; see docs/UPSTREAM_DIFFERENCES.md.)
 #
 # The GRCh37->GRCh38 liftover chain (Ensembl assembly_mapping) is tracked the same
 # way but is used gzipped and in place -- no unpack step:
@@ -115,18 +113,14 @@ PY
     done <<< "$paths"
     echo
 
-    # 3. Non-bioconda tools (only relevant to the imputation stage, which sets refs.impute).
+    # 3. Liftover chain (only relevant to the imputation stage, which sets refs.impute).
     if python3 - "$configfile" <<'PY'
 import sys, yaml
 d = yaml.safe_load(open(sys.argv[1])) or {}
 sys.exit(0 if (d.get("refs") or {}).get("impute") else 1)
 PY
     then
-        echo "Tools and liftover chain (imputation stage):"
-        local t
-        for t in resources/tools/GenotypeHarmonizer-1.4.23/GenotypeHarmonizer.jar resources/tools/minimac4; do
-            [[ -s "$t" ]] && ok "$t" || bad "missing: $t -- run './prep.sh' to unpack"
-        done
+        echo "Liftover chain (imputation stage):"
         local chain="resources/liftover/GRCh37_to_GRCh38.chain.gz"
         [[ -s "$chain" ]] && ok "$chain" || bad "missing: $chain -- 'dvc pull $chain.dvc'"
         echo
@@ -205,38 +199,6 @@ else
     done
     rm -rf "$tmp"; trap - EXIT
     echo "  -> resources/1000g/all_phase3_filtered.{pgen,pvar,psam} ($moved files)"
-fi
-
-# --- Tools that are not on bioconda (provisioned from public releases) ------
-gh="resources/tools/GenotypeHarmonizer-1.4.23-dist.tar.gz"
-if [[ "$force" == "true" || ! -s resources/tools/GenotypeHarmonizer-1.4.23/GenotypeHarmonizer.jar ]]; then
-    if [[ ! -s "$gh" ]]; then
-        echo "ERROR: $gh is not present. Fetch it first: dvc pull $gh.dvc (or dvc update $gh.dvc)" >&2
-        exit 1
-    fi
-    echo "Unpacking GenotypeHarmonizer ..."
-    tar xzf "$gh" -C resources/tools
-    [[ -s resources/tools/GenotypeHarmonizer-1.4.23/GenotypeHarmonizer.jar ]] \
-        || { echo "ERROR: GenotypeHarmonizer.jar not found after unpacking $gh" >&2; exit 1; }
-    echo "  -> resources/tools/GenotypeHarmonizer-1.4.23/GenotypeHarmonizer.jar"
-fi
-
-mm="resources/tools/minimac4-1.0.2-Linux.sh"
-if [[ "$force" == "true" || ! -x resources/tools/minimac4 ]]; then
-    if [[ ! -s "$mm" ]]; then
-        echo "ERROR: $mm is not present. Fetch it first: dvc pull $mm.dvc (or dvc update $mm.dvc)" >&2
-        exit 1
-    fi
-    echo "Installing Minimac4 1.0.2 ..."
-    inst="$(mktemp -d resources/tools/.mm4.XXXXXX)"
-    trap 'rm -rf "$inst"' EXIT
-    bash "$mm" --skip-license --prefix="$inst" > /dev/null
-    bin="$(find "$inst" -type f -name minimac4 | head -1)"
-    [[ -n "$bin" ]] || { echo "ERROR: minimac4 binary not found after installing $mm" >&2; exit 1; }
-    cp "$bin" resources/tools/minimac4
-    chmod +x resources/tools/minimac4
-    rm -rf "$inst"; trap - EXIT
-    echo "  -> resources/tools/minimac4"
 fi
 
 echo "Done."
