@@ -22,8 +22,8 @@ rule subset_plink_by_ancestry:
         logs/"subset_plink_by_ancestry/subset_{ancestry}.log"
     container:
         "docker://ghcr.io/swarbricklab/imputation-crossmap:20260928"
-    conda:
-        "../envs/crossmap.yaml"
+    # conda:
+    #     "../envs/crossmap.yaml"
     shell:
         """
         in_pgen={input.pgen}
@@ -60,8 +60,8 @@ rule crossmap:
         chain_file = "resources/liftover/GRCh37_to_GRCh38.chain.gz"
     container:
         "docker://ghcr.io/swarbricklab/imputation-crossmap:20260928"
-    conda:
-        "../envs/crossmap.yaml"
+    # conda:
+    #     "../envs/crossmap.yaml"
     log:
         logs/"crossmap/crossmap_{ancestry}.log"
     shell:
@@ -98,8 +98,8 @@ rule sort_bed:
         logs/"sort_bed/sort_bed_{ancestry}.log"
     container:
         "docker://ghcr.io/swarbricklab/imputation-plink:20260928"
-    conda:
-        "../envs/plink.yaml"
+    # conda:
+    #     "../envs/plink.yaml"
     shell:
         """
         in_bed={input.bed}
@@ -166,8 +166,8 @@ rule plink_to_vcf:
         logs/"plink_to_vcf_{ancestry}.log"
     container:
         "docker://ghcr.io/swarbricklab/imputation-plink-bcftools:2.00a3.7"
-    conda:
-        "../envs/plink-bcftools.yaml"
+    # conda:
+    #     "../envs/plink-bcftools.yaml"
     shell:
         """
         in_bed={input.bed}
@@ -199,8 +199,8 @@ rule vcf_fixref_hg38:
         logs/"vcf_fixref_hg38/fixref_{ancestry}.log"
     container:
         "docker://ghcr.io/swarbricklab/imputation-bcftools:20260928"
-    conda:
-        "../envs/bcftools.yaml"
+    # conda:
+    #     "../envs/bcftools.yaml"
     shell:
         """
         bcftools +fixref {input.data_vcf} -- -f {input.fasta} -i {input.vcf} \
@@ -224,8 +224,8 @@ rule filter_preimpute_vcf:
         logs/"filter_preimpute_vcf/filter_{ancestry}.log"
     container:
         "docker://ghcr.io/swarbricklab/imputation-bcftools:20260928"
-    conda:
-        "../envs/bcftools.yaml"
+    # conda:
+    #     "../envs/bcftools.yaml"
     shell:
         """
         #Add tags
@@ -258,8 +258,8 @@ rule het:
         script=workflow.source_path("../scripts/filter_het.R")
     container:
         "docker://ghcr.io/swarbricklab/imputation-het:20260928"
-    conda:
-        "../envs/het.yaml"
+    # conda:
+    #     "../envs/het.yaml"
     shell:
         """
         het={output.het}
@@ -290,8 +290,8 @@ rule het_filter:
         logs/"het_filter/het_filter_{ancestry}.log"
     container:
         "docker://ghcr.io/swarbricklab/imputation-bcftools:20260928"
-    conda:
-        "../envs/bcftools.yaml"
+    # conda:
+    #     "../envs/bcftools.yaml"
     shell:
         """
         if [ "{params.remove_outliers}" = "True" ]; then
@@ -316,8 +316,8 @@ rule calculate_missingness:
         logs/"calculate_missingness/missingness_{ancestry}.log"
     container:
         "docker://ghcr.io/swarbricklab/imputation-vcftools:20260928"
-    conda:
-        "../envs/vcftools.yaml"
+    # conda:
+    #     "../envs/vcftools.yaml"
     shell:
         """
         gunzip -c {input.filtered_vcf} \
@@ -342,8 +342,8 @@ rule split_by_chr:
         logs/"split_by_chr/split_{ancestry}_chr{chr}.log"
     container:
         "docker://ghcr.io/swarbricklab/imputation-bcftools:20260928"
-    conda:
-        "../envs/bcftools.yaml"
+    # conda:
+    #     "../envs/bcftools.yaml"
     shell:
         """
         bcftools view -r {wildcards.chr} {input.filtered_vcf} -Oz -o {output.vcf} 2> {log}
@@ -362,8 +362,8 @@ rule eagle_prephasing:
         logs/"eagle/eagle_prephasing_{ancestry}_chr{chr}.log"
     container:
         "docker://ghcr.io/swarbricklab/imputation-eagle:20260928"
-    conda:
-        "../envs/eagle.yaml"
+    # conda:
+    #     "../envs/eagle.yaml"
     shell:
         """
         out_vcf={output.vcf}
@@ -416,8 +416,8 @@ rule combine_vcfs_ancestry:
         logs/"combine_vcfs_{ancestry}.log"
     container:
         "docker://ghcr.io/swarbricklab/imputation-bcftools:20260928"
-    conda:
-        "../envs/bcftools.yaml"
+    # conda:
+    #     "../envs/bcftools.yaml"
     shell:
         """
         bcftools concat -Oz {input.vcfs} > {output.combined} 2> {log}
@@ -435,8 +435,8 @@ rule combine_vcfs_all:
         logs/"combine_vcfs_all.log"
     container:
         "docker://ghcr.io/swarbricklab/imputation-bcftools:20260928"
-    conda:
-        "../envs/bcftools.yaml"
+    # conda:
+    #     "../envs/bcftools.yaml"
     shell:
         """
         if [[ $(ls -l {input.vcfs} | wc -l) > 1 ]]
@@ -556,8 +556,8 @@ rule filter_exons_indels:
         logs/"filter_exons.indels.log"
     container:
         "docker://ghcr.io/swarbricklab/imputation-vcftools:20260928"
-    conda:
-        "../envs/vcftools.yaml"
+    # conda:
+    #     "../envs/vcftools.yaml"
     shell:
         """
         out_vcf={output.vcf}
