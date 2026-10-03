@@ -27,8 +27,8 @@ rule run_plink:
         logs/"plink/run_plink.log"
     container:
         "docker://ghcr.io/swarbricklab/imputation-plink:20260928"
-    conda:
-        "../envs/plink.yaml"
+    # conda:
+    #     "../envs/plink.yaml"
     shell:
         """
         pgen={output.pgen}
@@ -53,8 +53,8 @@ rule calculate_missingness:
         logs/"plink/calculate_missingness.log"
     container:
         "docker://ghcr.io/swarbricklab/imputation-plink:20260928"
-    conda:
-        "../envs/plink.yaml"
+    # conda:
+    #     "../envs/plink.yaml"
     shell:
         """
         in_pgen={input.pgen}
@@ -84,8 +84,8 @@ rule indiv_missingness:
         logs/"plink/indiv_missingness.log"
     container:
         "docker://ghcr.io/swarbricklab/imputation-plink:20260928"
-    conda:
-        "../envs/plink.yaml"
+    # conda:
+    #     "../envs/plink.yaml"
     shell:
         """
         in_pgen={input.pgen}
@@ -117,8 +117,8 @@ rule check_sex:
         logs/"plink/check_sex.log"
     container:
         "docker://ghcr.io/swarbricklab/imputation-plink:20260928"
-    conda:
-        "../envs/plink.yaml"
+    # conda:
+    #     "../envs/plink.yaml"
     shell:
         """
         in_pgen={input.pgen}
@@ -182,8 +182,8 @@ rule extract_common_snps:
         logs/"plink/extract_common_snps.log"
     container:
         "docker://ghcr.io/swarbricklab/imputation-plink:20260928"
-    conda:
-        "../envs/plink.yaml"
+    # conda:
+    #     "../envs/plink.yaml"
     shell:
         """
         exec > {log} 2>&1
@@ -244,8 +244,8 @@ rule prune_1000g:
         logs/"plink/prune_1000g.log"
     container:
         "docker://ghcr.io/swarbricklab/imputation-plink:20260928"
-    conda:
-        "../envs/plink.yaml"
+    # conda:
+    #     "../envs/plink.yaml"
     shell:
         """
         eval > {log} 2>&1
@@ -314,8 +314,8 @@ rule final_pruning: ### put in contingency for duplicated snps - remove from bot
         logs/"plink/final_pruning.log"
     container:
         "docker://ghcr.io/swarbricklab/imputation-plink:20260928"
-    conda:
-        "../envs/plink.yaml"
+    # conda:
+    #     "../envs/plink.yaml"
     shell:
         """
         in_pgen={input.bed}
@@ -353,8 +353,8 @@ rule relatedness_check:
         logs/"plink/relatedness_check.log"
     container:
         "docker://ghcr.io/swarbricklab/imputation-plink:20260928"
-    conda:
-        "../envs/plink.yaml"
+    # conda:
+    #     "../envs/plink.yaml"
     shell:
         """
         in_pgen={input.bed}
@@ -393,8 +393,8 @@ rule pca_1000g:
         logs/"plink/pca_1000g.log"
     container:
         "docker://ghcr.io/swarbricklab/imputation-plink:20260928"
-    conda:
-        "../envs/plink.yaml"
+    # conda:
+    #     "../envs/plink.yaml"
     shell:
         """
         in_pgen={input.pgen_1000g}
@@ -427,8 +427,8 @@ rule pca_project:
         logs/"plink/pca_project.log"
     container:
         "docker://ghcr.io/swarbricklab/imputation-plink:20260928"
-    conda:
-        "../envs/plink.yaml"
+    # conda:
+    #     "../envs/plink.yaml"
     shell:
         """
         in_pgen={input.pgen}
@@ -470,8 +470,8 @@ rule pca_projection_assign:
         plot=out_dir/"pca_sex_checks/Ancestry_PCAs.png"
     container:
         "docker://ghcr.io/swarbricklab/imputation-r:20260928"
-    conda:
-        "../envs/r.yaml"
+    # conda:
+    #     "../envs/r.yaml"
     log:
         logs/"pca_projection_assign.log"
     script:
@@ -490,8 +490,8 @@ rule separate_indivs:
         logs/"plink/separate_indivs.log"
     container:
         "docker://ghcr.io/swarbricklab/imputation-plink:20260928"
-    conda:
-        "../envs/plink.yaml"
+    # conda:
+    #     "../envs/plink.yaml"
     shell:
         """
         grep "UPDATE" {input.sexcheck} \
@@ -567,8 +567,8 @@ rule update_sex_ancestry:
         logs/"update_sex_ancestry.log"
     container:
         "docker://ghcr.io/swarbricklab/imputation-plink:20260928"
-    conda:
-        "../envs/plink.yaml"
+    # conda:
+    #     "../envs/plink.yaml"
     shell:
         """
         in_pgen={input.pgen}
