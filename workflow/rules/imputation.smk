@@ -3,9 +3,11 @@ rule subset_psam_by_ancestry:
         psam=post_qc_plink/"post_qc.psam"
     output:
         keep=temp(out_dir/"subset_ancestry/{ancestry}_individuals.psam")
+    log:
+        logs/"subset_psam_by_ancestry/subset_{ancestry}.log"
     shell:
         """
-        grep {wildcards.ancestry} {input.psam} > {output.keep}
+        grep "{wildcards.ancestry}" {input.psam} > {output.keep} 2> {log}
         """
 
 rule subset_plink_by_ancestry:
@@ -21,7 +23,7 @@ rule subset_plink_by_ancestry:
     log:
         logs/"subset_plink_by_ancestry/subset_{ancestry}.log"
     container:
-        "docker://ghcr.io/swarbricklab/imputation-crossmap:20260928"
+        config['containers']['crossmap']
     # conda:
     #     "../envs/crossmap.yaml"
     shell:
@@ -35,7 +37,7 @@ rule subset_plink_by_ancestry:
             --pfile $in_prefix \
             --keep {input.keep}  \
             --max-alleles 2 \
-            --make-pgen 'psam-cols='fid,parents,sex,phenos \
+            --make-pgen 'psam-cols=fid,parents,sex,phenos' \
             --out $out_prefix
         mv ${{out_prefix}}.log {log}
         """
@@ -57,9 +59,9 @@ rule crossmap:
         excluded_ids=temp(out_dir/"crossmapped/{ancestry}_excluded_ids.txt"),
         unmap=temp(out_dir/"crossmapped/{ancestry}_crossmap_output.bed.unmap")
     params:
-        chain_file = "resources/liftover/GRCh37_to_GRCh38.chain.gz"
+        chain_file = config['refs']['chain']
     container:
-        "docker://ghcr.io/swarbricklab/imputation-crossmap:20260928"
+        config['containers']['crossmap']
     # conda:
     #     "../envs/crossmap.yaml"
     log:
@@ -97,7 +99,7 @@ rule sort_bed:
     log:
         logs/"sort_bed/sort_bed_{ancestry}.log"
     container:
-        "docker://ghcr.io/swarbricklab/imputation-plink:20260928"
+        config['containers']['plink']
     # conda:
     #     "../envs/plink.yaml"
     shell:
@@ -135,7 +137,7 @@ rule harmonize_hg38:
         harmonizer=logs/"harmonize_hg38/harmonize_hg38_{ancestry}.log",
         snp_log=logs/"harmonize_hg38/snpLog_{ancestry}.log"
     container:
-        "docker://ghcr.io/swarbricklab/imputation-genotypeharmonizer:1.4.23"
+        config['containers']['genotypeharmonizer']
     shell:
         """
         in_bed={input.bed}
@@ -165,7 +167,7 @@ rule plink_to_vcf:
     log:
         logs/"plink_to_vcf_{ancestry}.log"
     container:
-        "docker://ghcr.io/swarbricklab/imputation-plink-bcftools:2.00a3.7"
+        config['containers']['plink_bcftools']
     # conda:
     #     "../envs/plink-bcftools.yaml"
     shell:
@@ -198,7 +200,7 @@ rule vcf_fixref_hg38:
     log:
         logs/"vcf_fixref_hg38/fixref_{ancestry}.log"
     container:
-        "docker://ghcr.io/swarbricklab/imputation-bcftools:20260928"
+        config['containers']['bcftools']
     # conda:
     #     "../envs/bcftools.yaml"
     shell:
@@ -223,7 +225,7 @@ rule filter_preimpute_vcf:
     log:
         logs/"filter_preimpute_vcf/filter_{ancestry}.log"
     container:
-        "docker://ghcr.io/swarbricklab/imputation-bcftools:20260928"
+        config['containers']['bcftools']
     # conda:
     #     "../envs/bcftools.yaml"
     shell:
@@ -256,8 +258,10 @@ rule het:
         passed_list=temp(out_dir/"het/{ancestry}_het_passed.txt")
     params:
         script=workflow.source_path("../scripts/filter_het.R")
+    log:
+        logs/"het/het_{ancestry}.log"
     container:
-        "docker://ghcr.io/swarbricklab/imputation-het:20260928"
+        config['containers']['het']
     # conda:
     #     "../envs/het.yaml"
     shell:
@@ -266,9 +270,9 @@ rule het:
         het_base=${{het%.het}}
         gunzip -c {input.vcf} \
             | sed 's/^##fileformat=VCFv4.3/##fileformat=VCFv4.2/' \
-            > {output.tmp_vcf}
-        vcftools --vcf {output.tmp_vcf} --het --out $het_base
-        Rscript {params.script} {output.het} {output.inds} {output.passed} {output.passed_list}
+            > {output.tmp_vcf} 2> {log}
+        vcftools --vcf {output.tmp_vcf} --het --out $het_base 2>> {log}
+        Rscript {params.script} {output.het} {output.inds} {output.passed} {output.passed_list} 2>> {log}
         """
 
 rule het_filter:
@@ -289,7 +293,7 @@ rule het_filter:
     log:
         logs/"het_filter/het_filter_{ancestry}.log"
     container:
-        "docker://ghcr.io/swarbricklab/imputation-bcftools:20260928"
+        config['containers']['bcftools']
     # conda:
     #     "../envs/bcftools.yaml"
     shell:
@@ -315,7 +319,7 @@ rule calculate_missingness:
     log:
         logs/"calculate_missingness/missingness_{ancestry}.log"
     container:
-        "docker://ghcr.io/swarbricklab/imputation-vcftools:20260928"
+        config['containers']['vcftools']
     # conda:
     #     "../envs/vcftools.yaml"
     shell:
@@ -341,13 +345,13 @@ rule split_by_chr:
     log:
         logs/"split_by_chr/split_{ancestry}_chr{chr}.log"
     container:
-        "docker://ghcr.io/swarbricklab/imputation-bcftools:20260928"
+        config['containers']['bcftools']
     # conda:
     #     "../envs/bcftools.yaml"
     shell:
         """
         bcftools view -r {wildcards.chr} {input.filtered_vcf} -Oz -o {output.vcf} 2> {log}
-        bcftools index {output.vcf} 2>> {log} 
+        bcftools index {output.vcf} 2>> {log}
         """
 
 rule eagle_prephasing:
@@ -361,7 +365,7 @@ rule eagle_prephasing:
     log:
         logs/"eagle/eagle_prephasing_{ancestry}_chr{chr}.log"
     container:
-        "docker://ghcr.io/swarbricklab/imputation-eagle:20260928"
+        config['containers']['eagle']
     # conda:
     #     "../envs/eagle.yaml"
     shell:
@@ -387,11 +391,12 @@ rule minimac_imputation:
     params:
         # On PATH inside the image (Minimac4 1.0.2 is not on bioconda; container-only).
         minimac4 = "minimac4",
-        chunk_length = config["params"]["chunk_length"]
+        chunk_length = config["params"]["chunk_length"],
+        impute_format = config['params']['impute_format']
     log:
         logs/"minimac/minimac_{ancestry}_chr{chr}.log"
     container:
-        "docker://ghcr.io/swarbricklab/imputation-minimac4:1.0.2"
+        config['containers']['minimac4']
     shell:
         """
         out_vcf={output.vcf}
@@ -399,7 +404,7 @@ rule minimac_imputation:
         {params.minimac4} --refHaps {input.impute_file} \
             --haps {input.vcf} \
             --prefix $out_prefix \
-            --format GT,DS,GP \
+            --format {params.impute_format} \
             --noPhoneHome \
             --cpus {resources.threads} \
             --ChunkLengthMb {params.chunk_length} \
@@ -415,7 +420,7 @@ rule combine_vcfs_ancestry:
     log:
         logs/"combine_vcfs_{ancestry}.log"
     container:
-        "docker://ghcr.io/swarbricklab/imputation-bcftools:20260928"
+        config['containers']['bcftools']
     # conda:
     #     "../envs/bcftools.yaml"
     shell:
@@ -434,7 +439,7 @@ rule combine_vcfs_all:
     log:
         logs/"combine_vcfs_all.log"
     container:
-        "docker://ghcr.io/swarbricklab/imputation-bcftools:20260928"
+        config['containers']['bcftools']
     # conda:
     #     "../envs/bcftools.yaml"
     shell:
@@ -443,7 +448,7 @@ rule combine_vcfs_all:
         then
             bcftools merge -Oz {input.vcfs} > {output.combined} 2> {log}
         else
-            cp {input.vcfs} {output.combined}
+            cp {input.vcfs} {output.combined} 2> {log}
         fi
         bcftools index {output.combined} >> {log} 2>&1
         """
@@ -458,7 +463,7 @@ rule restore_vcf_header:
     log:
         logs/"restore_vcf_header.log"
     container:
-        "docker://quay.io/biocontainers/bcftools:1.21--h8b25389_0"
+        config['containers']['bcftools_biocontainer']
     shell:
         """
         awk -F'\t' '{{print $2 "\t" $1}}' {input.id_map} \
@@ -485,7 +490,7 @@ rule get_preimpute_XY:
     log:
         logs/"preimpute_XY.log"
     container:
-        "docker://quay.io/biocontainers/bcftools:1.21--h8b25389_0"
+        config['containers']['bcftools_biocontainer']
     shell:
         """
         awk 'NR>1 {{print $2}}' {input.psam} > {output.samples}
@@ -511,7 +516,7 @@ rule reinsert_XY:
     log:
         logs/"reinsert_XY.log"
     container:
-        "docker://quay.io/biocontainers/bcftools:1.21--h8b25389_0"
+        config['containers']['bcftools_biocontainer']
     shell:
         """
         # The autosome branch can drop samples that the XY branch does not (e.g.
@@ -519,8 +524,8 @@ rule reinsert_XY:
         # of truth for the surviving sample set. Derive the order from them and
         # subset the XY records to match -- bcftools concat requires identical
         # sample sets in identical order across the two inputs.
-        bcftools query -l {input.auto} > {output.order}
-        bcftools view -S {output.order} --force-samples -o {output.reordered_xy} {input.xy}
+        bcftools query -l {input.auto} > {output.order} 2>> {log}
+        bcftools view -S {output.order} --force-samples -o {output.reordered_xy} {input.xy} 2>> {log}
         bcftools concat {input.auto} {output.reordered_xy} -Oz -o {output.vcf} 2> {log}
         bcftools index {output.vcf}  2>> {log}
         """
@@ -532,14 +537,15 @@ rule filter_maf_r2:
         vcf=temp(out_dir/"filtered/imputed_filtered_maf_r2.hg38.vcf.gz"),
         idx=temp(out_dir/"filtered/imputed_filtered_maf_r2.hg38.vcf.gz.csi")
     params:
-        maf=config['params']['post_maf']
+        maf=config['params']['post_maf'],
+        post_r2=config['params']['post_r2']
     log:
         logs/"filter_maf_r2.log"
     container:
-        "docker://quay.io/biocontainers/bcftools:1.21--h8b25389_0"
+        config['containers']['bcftools_biocontainer']
     shell:
-        """ 
-            bcftools filter -i '(IMPUTED=1 && MAF >= {params.maf} && R2 > 0.8) || (IMPUTED=0)' \
+        """
+            bcftools filter -i '(IMPUTED=1 && MAF >= {params.maf} && R2 > {params.post_r2}) || (IMPUTED=0)' \
                 -Oz -o {output.vcf} \
                 {input.vcf} \
                 2> {log}
@@ -553,9 +559,9 @@ rule filter_exons_indels:
     output:
         vcf=temp(out_dir/"filter_exons_indels/imputed_filtered_maf_r2.hg38.recode.vcf.gz")
     log:
-        logs/"filter_exons.indels.log"
+        logs/"filter_exons_indels/filter_exons_indels.log"
     container:
-        "docker://ghcr.io/swarbricklab/imputation-vcftools:20260928"
+        config['containers']['vcftools']
     # conda:
     #     "../envs/vcftools.yaml"
     shell:
@@ -584,14 +590,14 @@ rule rename_chromosomes:
     log:
         logs/"rename_chromosomes.log"
     container:
-        "docker://quay.io/biocontainers/bcftools:1.21--h8b25389_0"
+        config['containers']['bcftools_biocontainer']
+    # bcftools sort + the chr-named --fai reheader give a naturally ordered VCF
+    # (chr1..chr22,chrX), not the string-sorted chr1,chr10,.. of the retired .sif.
+    # Strip ALL run-varying header metadata so reruns from identical inputs are
+    # byte-identical: Minimac's ##filedate, bcftools' "; Date=..." stamps, and the
+    # ##bcftools_*Command provenance lines (which embed per-run temp paths). See
+    # docs/UPSTREAM_DIFFERENCES.md.
     shell:
-        # bcftools sort + the chr-named --fai reheader give a naturally ordered VCF
-        # (chr1..chr22,chrX), not the string-sorted chr1,chr10,.. of the retired .sif.
-        # Strip ALL run-varying header metadata so reruns from identical inputs are
-        # byte-identical: Minimac's ##filedate, bcftools' "; Date=..." stamps, and the
-        # ##bcftools_*Command provenance lines (which embed per-run temp paths). See
-        # docs/UPSTREAM_DIFFERENCES.md.
         """
         bcftools annotate --rename-chrs {input.map} {input.vcf} \
             | bcftools view \

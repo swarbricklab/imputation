@@ -73,9 +73,6 @@ data_score_temp <- data_score %>%
 message("Data score:")
 print(head(data_score_temp))
 
-colnames(onekg_score_temp)
-colnames(data_score_temp)
-
 scores <- rbind(onekg_score_temp, data_score_temp)
 print(head(as.data.frame(scores)))
 
@@ -105,7 +102,6 @@ print(conversion_key)
 
 scores <- left_join(scores, conversion_key)
 
-scores$combined_assignment <- ifelse(is.na(scores$SuperPop), scores$Assignment, scores$SuperPop)
 scores$combined_assignment <- ifelse(is.na(scores$SuperPop), scores$Assignment, scores$SuperPop)
 scores$Changed <- ifelse(is.na(scores$Provided_Ancestry), "Matched", ifelse(scores$Provided_Ancestry == scores$Assignment, "Matched", paste0("Unmatched-",scores$Provided_Ancestry,"->",scores$Assignment)))
 
