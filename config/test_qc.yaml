@@ -1,4 +1,17 @@
 
+containers:
+  plink:               docker://ghcr.io/swarbricklab/imputation-plink:20260928
+  crossmap:            docker://ghcr.io/swarbricklab/imputation-crossmap:20260928
+  bcftools:            docker://ghcr.io/swarbricklab/imputation-bcftools:20260928
+  het:                 docker://ghcr.io/swarbricklab/imputation-het:20260928
+  vcftools:            docker://ghcr.io/swarbricklab/imputation-vcftools:20260928
+  eagle:               docker://ghcr.io/swarbricklab/imputation-eagle:20260928
+  r:                   docker://ghcr.io/swarbricklab/imputation-r:20260928
+  plink_bcftools:      docker://ghcr.io/swarbricklab/imputation-plink-bcftools:2.00a3.7
+  genotypeharmonizer:  docker://ghcr.io/swarbricklab/imputation-genotypeharmonizer:1.4.23
+  minimac4:            docker://ghcr.io/swarbricklab/imputation-minimac4:1.0.2
+  bcftools_biocontainer: docker://quay.io/biocontainers/bcftools:1.21--h8b25389_0
+
 deps:
   input_vcf: test/data/test.hg19.vcf.gz
   input_psam: test/data/test.psam
@@ -18,3 +31,4 @@ params:
   indiv_missingness_mind: 0.05
   king_cutoff: 0.0884        # 2nd-degree+ relatives are removed
   king_table_cutoff: 0.0442  # 3rd-degree+ pairs appear in the .kin0 report
+  ld_prune: "50 5 0.5"       # plink2 --indep-pairwise window step r^2

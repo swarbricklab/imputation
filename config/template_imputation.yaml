@@ -1,3 +1,16 @@
+containers:
+  plink:               docker://ghcr.io/swarbricklab/imputation-plink:20260928
+  crossmap:            docker://ghcr.io/swarbricklab/imputation-crossmap:20260928
+  bcftools:            docker://ghcr.io/swarbricklab/imputation-bcftools:20260928
+  het:                 docker://ghcr.io/swarbricklab/imputation-het:20260928
+  vcftools:            docker://ghcr.io/swarbricklab/imputation-vcftools:20260928
+  eagle:               docker://ghcr.io/swarbricklab/imputation-eagle:20260928
+  r:                   docker://ghcr.io/swarbricklab/imputation-r:20260928
+  plink_bcftools:      docker://ghcr.io/swarbricklab/imputation-plink-bcftools:2.00a3.7
+  genotypeharmonizer:  docker://ghcr.io/swarbricklab/imputation-genotypeharmonizer:1.4.23
+  minimac4:            docker://ghcr.io/swarbricklab/imputation-minimac4:1.0.2
+  bcftools_biocontainer: docker://quay.io/biocontainers/bcftools:1.21--h8b25389_0
+
 deps:
   input_vcf: data/snp/genotyping/donors.hg38.vcf.gz
   post_qc_plink: data/snp/plink_qc
@@ -17,6 +30,7 @@ refs:
   bed: resources/bed/hg38exonsUCSC.bed
   int2chr: resources/genomes/chr_map/int2chr.txt
   chr2int: resources/genomes/chr_map/chr2int.txt
+  chain: resources/liftover/GRCh37_to_GRCh38.chain.gz
 
 params:
     # the maximum proportion that can be missing for a snp to be included (5% by default)
@@ -32,3 +46,7 @@ params:
     # permissive setting held back until the pipeline reproduces the golden output
     # (see docs/UPSTREAM_DIFFERENCES.md).
     post_maf: 0.05
+    # Minimum imputation R2 (INFO score) applied in post-imputation filtering.
+    post_r2: 0.8
+    # Per-genotype fields minimac4 writes into the imputed VCF.
+    impute_format: "GT,DS,GP"

@@ -9,7 +9,7 @@ rule reheader_vcf:
     log:
         logs/"vcf_reheader.log"
     container:
-        "docker://quay.io/biocontainers/bcftools:1.21--h8b25389_0"
+        config['containers']['bcftools_biocontainer']
     shell:
         """
         bcftools reheader -s {input.id_map} {input.vcf} -o {output.vcf} > {log} 2>&1
@@ -17,16 +17,16 @@ rule reheader_vcf:
 
 rule run_plink:
     input:
-        psam=config['deps']['input_psam'], 
+        psam=config['deps']['input_psam'],
         vcf=rules.reheader_vcf.output.vcf
-    output: 
+    output:
         psam=temp(out_dir/"plink/plink.psam"),
         pgen=temp(out_dir/"plink/plink.pgen"),
         pvar=temp(out_dir/"plink/plink.pvar")
     log:
         logs/"plink/run_plink.log"
     container:
-        "docker://ghcr.io/swarbricklab/imputation-plink:20260928"
+        config['containers']['plink']
     # conda:
     #     "../envs/plink.yaml"
     shell:
@@ -48,11 +48,11 @@ rule calculate_missingness:
         pgen=rules.run_plink.output.pgen,
         pvar=rules.run_plink.output.pvar
     output:
-        smiss=out_dir/"indiv_missingness/sample_missingness.smiss"
+        smiss=temp(out_dir/"indiv_missingness/sample_missingness.smiss")
     log:
         logs/"plink/calculate_missingness.log"
     container:
-        "docker://ghcr.io/swarbricklab/imputation-plink:20260928"
+        config['containers']['plink']
     # conda:
     #     "../envs/plink.yaml"
     shell:
@@ -79,11 +79,11 @@ rule indiv_missingness:
         pvar=out_dir/"indiv_missingness/indiv_missingness.pvar",
         psam=out_dir/"indiv_missingness/indiv_missingness.psam"
     params:
-       mind = config["params"]["indiv_missingness_mind"]
+        mind = config["params"]["indiv_missingness_mind"]
     log:
         logs/"plink/indiv_missingness.log"
     container:
-        "docker://ghcr.io/swarbricklab/imputation-plink:20260928"
+        config['containers']['plink']
     # conda:
     #     "../envs/plink.yaml"
     shell:
@@ -116,7 +116,7 @@ rule check_sex:
     log:
         logs/"plink/check_sex.log"
     container:
-        "docker://ghcr.io/swarbricklab/imputation-plink:20260928"
+        config['containers']['plink']
     # conda:
     #     "../envs/plink.yaml"
     shell:
@@ -156,6 +156,7 @@ rule find_common_snps:
         logs/"find_common_snps.log"
     shell:
         """
+        exec > {log} 2>&1
         # Find the intersection of SNPs from both pvar files using awk
         awk 'NR==FNR{{a[$1,$2,$4,$5];next}} ($1,$2,$4,$5) in a{{print $3}}' {input.pvar} {input.pvar_1000g} > {output.snps_1000g}
         awk 'NR==FNR{{a[$1,$2,$4,$5];next}} ($1,$2,$4,$5) in a{{print $3}}' {input.pvar_1000g} {input.pvar} > {output.snps_data}
@@ -181,7 +182,7 @@ rule extract_common_snps:
     log:
         logs/"plink/extract_common_snps.log"
     container:
-        "docker://ghcr.io/swarbricklab/imputation-plink:20260928"
+        config['containers']['plink']
     # conda:
     #     "../envs/plink.yaml"
     shell:
@@ -240,15 +241,17 @@ rule prune_1000g:
         fam=temp(out_dir/"common_snps/subset_pruned_data.psam"),
         data_1000g_key=temp(out_dir/"common_snps/subset_pruned_data_1000g_key.txt"),
         SNPs2keep=temp(out_dir/"common_snps/SNPs2keep.txt")
+    params:
+        ld_prune=config['params']['ld_prune']
     log:
         logs/"plink/prune_1000g.log"
     container:
-        "docker://ghcr.io/swarbricklab/imputation-plink:20260928"
+        config['containers']['plink']
     # conda:
     #     "../envs/plink.yaml"
     shell:
         """
-        eval > {log} 2>&1
+        exec > {log} 2>&1
         in_pgen_1000g={input.bed_1000g}
         in_prefix_1000g=${{in_pgen_1000g%.pgen}}
         out_pgen_1000g={output.bed_1000g}
@@ -256,7 +259,7 @@ rule prune_1000g:
 
         plink2 --threads {threads} \
             --pfile $in_prefix_1000g \
-            --indep-pairwise 50 5 0.5 \
+            --indep-pairwise {params.ld_prune} \
             --out $out_prefix_1000g
         rm ${{out_prefix_1000g}}.log
 
@@ -277,7 +280,7 @@ rule prune_1000g:
             | grep -v "##" >> {output.data_1000g_key}
         grep -v "##" {output.data_1000g_key} \
             | awk 'BEGIN{{FS=OFS="\t"}}{{print $NF}}' \
-            > {output.prune_out} 
+            > {output.prune_out}
 
         in_pgen={input.bed}
         in_prefix=${{in_pgen%.pgen}}
@@ -289,7 +292,7 @@ rule prune_1000g:
             --make-pgen 'psam-cols='fid,parents,sex,phenos \
             --out $out_prefix
         rm ${{out_prefix}}.log
-    
+
         cp {output.bim} {output.bim_old}
         grep -v "#" {output.bim_old} \
             | awk 'BEGIN{{FS=OFS="\t"}}{{print($3)}}' \
@@ -300,7 +303,7 @@ rule prune_1000g:
         grep "##" {output.bim_1000g} > {output.bim}
         cat {output.bim_temp} >> {output.bim}
         """
-        
+
 rule final_pruning: ### put in contingency for duplicated snps - remove from both 1000G and your dataset
     input:
         bed=out_dir/"common_snps/subset_pruned_data.pgen",
@@ -313,7 +316,7 @@ rule final_pruning: ### put in contingency for duplicated snps - remove from bot
     log:
         logs/"plink/final_pruning.log"
     container:
-        "docker://ghcr.io/swarbricklab/imputation-plink:20260928"
+        config['containers']['plink']
     # conda:
     #     "../envs/plink.yaml"
     shell:
@@ -323,7 +326,7 @@ rule final_pruning: ### put in contingency for duplicated snps - remove from bot
         out_pgen={output.bed}
         out_prefix=${{out_pgen%.pgen}}
         plink2 --rm-dup 'force-first' \
-            -threads {threads} \
+            --threads {threads} \
             --pfile $in_prefix \
             --make-pgen 'psam-cols='fid,parents,sex,phenos \
             --out $out_prefix
@@ -352,7 +355,7 @@ rule relatedness_check:
     log:
         logs/"plink/relatedness_check.log"
     container:
-        "docker://ghcr.io/swarbricklab/imputation-plink:20260928"
+        config['containers']['plink']
     # conda:
     #     "../envs/plink.yaml"
     shell:
@@ -383,7 +386,7 @@ rule pca_1000g:
         pgen_1000g=out_dir/"common_snps/subset_pruned_1000g.pgen",
         pvar_1000g=out_dir/"common_snps/subset_pruned_1000g.pvar",
         psam_1000g=out_dir/"common_snps/subset_pruned_1000g.psam",
-        bed=out_dir/"common_snps/subset_pruned_data.pgen" 
+        bed=out_dir/"common_snps/subset_pruned_data.pgen"
     output:
         out=temp(out_dir/"pca_projection/subset_pruned_1000g_pcs.acount"),
         eig_all=temp(out_dir/"pca_projection/subset_pruned_1000g_pcs.eigenvec.allele"),
@@ -392,7 +395,7 @@ rule pca_1000g:
     log:
         logs/"plink/pca_1000g.log"
     container:
-        "docker://ghcr.io/swarbricklab/imputation-plink:20260928"
+        config['containers']['plink']
     # conda:
     #     "../envs/plink.yaml"
     shell:
@@ -426,7 +429,7 @@ rule pca_project:
     log:
         logs/"plink/pca_project.log"
     container:
-        "docker://ghcr.io/swarbricklab/imputation-plink:20260928"
+        config['containers']['plink']
     # conda:
     #     "../envs/plink.yaml"
     shell:
@@ -469,7 +472,7 @@ rule pca_projection_assign:
         anc_check=temp(out_dir/"pca_sex_checks/ancestry_update_remove.tsv"),
         plot=out_dir/"pca_sex_checks/Ancestry_PCAs.png"
     container:
-        "docker://ghcr.io/swarbricklab/imputation-r:20260928"
+        config['containers']['r']
     # conda:
     #     "../envs/r.yaml"
     log:
@@ -489,11 +492,12 @@ rule separate_indivs:
     log:
         logs/"plink/separate_indivs.log"
     container:
-        "docker://ghcr.io/swarbricklab/imputation-plink:20260928"
+        config['containers']['plink']
     # conda:
     #     "../envs/plink.yaml"
     shell:
         """
+        exec > {log} 2>&1
         grep "UPDATE" {input.sexcheck} \
             | awk 'BEGIN{{FS=OFS="\t"}}{{print($1,$2,$4)}}' \
             | sed 's/SNPSEX/SEX/g'\
@@ -517,6 +521,8 @@ rule update_psam:
         psam=out_dir/"indiv_missingness/indiv_missingness.psam"
     output:
         anc_updated_psam=temp(out_dir/"pca_sex_checks/updated_psam.psam")
+    log:
+        logs/"update_psam.log"
     run:
         # Read input files
         ancestry_check = pd.read_csv(input.ancestry, sep="\t")
@@ -545,6 +551,8 @@ rule prepare_update:
         pgen=temp(out_dir/"update_prep/update_prep.pgen"),
         pvar=temp(out_dir/"update_prep/update_prep.pvar"),
         psam=temp(out_dir/"update_prep/update_prep.psam")
+    log:
+        logs/"prepare_update.log"
     shell:
         """
         cp {input.pgen} {output.pgen}
@@ -566,7 +574,7 @@ rule update_sex_ancestry:
     log:
         logs/"update_sex_ancestry.log"
     container:
-        "docker://ghcr.io/swarbricklab/imputation-plink:20260928"
+        config['containers']['plink']
     # conda:
     #     "../envs/plink.yaml"
     shell:
@@ -590,6 +598,8 @@ rule export_sample_metadata:
         psam=final/"post_qc.psam"
     output:
         csv=metadata_csv
+    log:
+        logs/"export_sample_metadata.log"
     run:
         psam_df = pd.read_csv(input.psam, sep="\t", dtype=str)
 
