@@ -25,6 +25,12 @@ The final VCF of imputed SNP profiles is consumed by
 [Demuxafy](https://demultiplexing-doublet-detecting-docs.readthedocs.io/) to
 assign cells to donors in multiplexed 10x Chromium pools.
 
+> This workflow was **adapted from the Powell Lab / sceQTL-Gen consortium imputation
+> pipeline** ([powellgenomicslab/SNP_imputation_1000g_hg38](https://github.com/powellgenomicslab/SNP_imputation_1000g_hg38)).
+> See [`docs/UPSTREAM_DIFFERENCES.md`](docs/UPSTREAM_DIFFERENCES.md) for exactly how
+> this version differs (and how it reproduces the original's output). Citation details
+> are in [`CITATION.cff`](CITATION.cff) and under [Attribution](#attribution) below.
+
 ## Inputs (from `genotyping`)
 
 - **VCF** — genotype calls for all samples (hg19 for QC, hg38 for imputation)
@@ -45,23 +51,37 @@ assign cells to donors in multiplexed 10x Chromium pools.
 
 ## Tools
 
-The rules drive standard population-genetics tooling:
+The rules drive standard population-genetics tooling, each pinned to a specific
+public version:
 
-| Step | Tool |
-|------|------|
-| VCF manipulation, reference fixing | `bcftools` (incl. `+fixref`, `+liftover`) |
-| QC, ancestry, format conversion | `plink` / `plink2`, `vcftools` |
-| Liftover hg19 → GRCh38 | `CrossMap` |
-| Strand/allele harmonisation | `GenotypeHarmonizer` |
-| Phasing | `Eagle` |
-| Imputation | `Minimac4` |
+| Step | Tool | Version |
+|------|------|---------|
+| VCF manipulation, reference fixing (`+fixref`) | `bcftools` | 1.10.2 |
+| QC, ancestry, format conversion | `plink` / `plink2` | 1.90b6.21 / 2.00a3.7 |
+| Missingness, heterozygosity, site filtering | `vcftools` | 0.1.16 |
+| Liftover hg19 → GRCh38 | `CrossMap` | 0.6.5 |
+| Strand/allele harmonisation | `GenotypeHarmonizer` | 1.4.23 |
+| Phasing | `Eagle` | 2.4.1 |
+| Imputation | `Minimac4` | 1.0.2 |
+| Het filter + ancestry-PCA plotting (R scripts) | `R` (`r-base`) | 4.3 |
+| Initial sample reheader | `bcftools` (biocontainer) | 1.21 |
 
-> **Tools are public and version-pinned.** The former monolithic image
-> (`SNP_imputation_1000g_hg38.sif`) has been retired in favour of per-rule conda
-> environments (`workflow/envs/`), each pinning a public, versioned tool; a few
-> rules use pinned public biocontainers (e.g. `bcftools:1.21`). The two tools with
-> no bioconda package (GenotypeHarmonizer, Minimac4 1.0.2) are fetched from public
-> GitHub releases via `dvc import-url`. See issue #23.
+Versions are pinned to match the retired monolithic `.sif`, so the pipeline
+reproduces its ("golden") output — see `docs/UPSTREAM_DIFFERENCES.md`.
+
+> **Containerised, with a conda fallback.** The former monolithic image
+> (`SNP_imputation_1000g_hg38.sif`) has been retired. **By default** every rule runs
+> from a pinned, public per-rule OCI image under
+> [`ghcr.io/swarbricklab`](https://github.com/orgs/swarbricklab/packages) (built with
+> absconda), selected via the `containers:` map in the config; run with
+> `--use-singularity` (the bundled `nci` profile already does). GenotypeHarmonizer and
+> Minimac4 (no bioconda package) are baked into their images; the reheader step uses
+> the public `quay.io/biocontainers/bcftools:1.21` image.
+>
+> **No Singularity/Apptainer?** Every rule also carries a commented `conda:` directive
+> pointing at `workflow/envs/*.yaml` (the same pinned versions). Uncomment the `conda:`
+> blocks and run with `--use-conda` instead of `--use-singularity` to build the tools
+> from conda — no container runtime required. See issue #23.
 
 ## Reference data and provenance
 
@@ -74,8 +94,10 @@ access to any private registry:
 - `resources/1000G.tar.gz` — 1000 Genomes phase-3 plink (ancestry QC)
 - `resources/bed/hg38exonsUCSC.bed` — hg38 exon BED
 - `resources/liftover/GRCh37_to_GRCh38.chain.gz` — Ensembl GRCh37→GRCh38 liftover chain
-- `resources/tools/` — GenotypeHarmonizer and Minimac4 (tools with no bioconda package)
 - `resources/genomes/chr_map/`, `resources/genomes/GRCh38_chr.fai` — small, git-tracked
+
+(GenotypeHarmonizer and Minimac4 are no longer provisioned as reference data —
+they ship inside the per-rule container images.)
 
 Fetch, then extract into the paths the config/rules expect:
 
@@ -85,18 +107,18 @@ dvc pull
 # Or, without remote access, re-download straight from the public source URLs:
 dvc update resources/eQTLGenImpRef.tar.gz.dvc resources/1000G.tar.gz.dvc \
            resources/bed/hg38exonsUCSC.bed.dvc \
-           resources/liftover/GRCh37_to_GRCh38.chain.gz.dvc \
-           resources/tools/GenotypeHarmonizer-1.4.23-dist.tar.gz.dvc \
-           resources/tools/minimac4-1.0.2-Linux.sh.dvc
+           resources/liftover/GRCh37_to_GRCh38.chain.gz.dvc
 
-./prep.sh    # extract the archives into place (~160 GB); tarballs can then be deleted
+./prep.sh    # extract the archives into place; tarballs can then be deleted
 ```
 
-This workflow was **adapted from the Powell Lab / sceQTL-Gen consortium
-imputation pipeline**
+## Attribution
+
+Adapted from the Powell Lab / sceQTL-Gen consortium imputation pipeline
 ([powellgenomicslab/SNP_imputation_1000g_hg38](https://github.com/powellgenomicslab/SNP_imputation_1000g_hg38)),
-itself developed for the sceQTL-Gen WG1 pipeline. If you use this workflow,
-please cite:
+itself developed for the sceQTL-Gen WG1 pipeline — see
+[`docs/UPSTREAM_DIFFERENCES.md`](docs/UPSTREAM_DIFFERENCES.md) for the differences.
+If you use this workflow, please cite:
 
 - van der Wijst *et al.* (2020), *eLife* — the sceQTL-Gen / single-cell eQTL
   reference approach.
@@ -129,6 +151,10 @@ git submodule update --init --recursive
 
 ## Status
 
-This repository is being prepared for public release alongside the manuscript.
-See `docs/PUBLICATION_READINESS.md` for the roadmap and the open issues it maps
-to.
+Public, citable (`CITATION.cff`), and reproducible from public inputs — ready for the
+**v1.0.0** release. The workflow reproduces the retired monolithic `.sif` ("golden")
+output byte-for-byte except for cosmetic header timestamps and record/sample ordering
+(`docs/UPSTREAM_DIFFERENCES.md` §3). Deliberate divergences from the upstream
+sc-eQTLGen pipeline are documented in `docs/UPSTREAM_DIFFERENCES.md`; planned
+post-1.0 improvements are tracked in the
+[issue tracker](https://github.com/swarbricklab/imputation/issues).

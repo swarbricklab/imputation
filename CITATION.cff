@@ -1,13 +1,11 @@
-# NOTE (draft): the author list is still under review before release. Beata Myler
-# and Victor Liu are added here per the shared genotyping author set. The Powell
-# Lab / sceQTL-Gen legacy that much of this workflow is adapted from is credited
-# in the `references:` block below (and in the abstract), which is the standard
-# way to credit derived work -- rather than by listing its authors as authors of
-# this repo. If the lab wants to list upstream contributors (e.g. Drew Neavin) as
-# co-authors, that should be agreed with them first. version/date-released and the
-# Zenodo DOI are added at release time.
+# The Powell Lab / sceQTL-Gen legacy that much of this workflow is adapted from is
+# credited in the `references:` block below (and in the abstract), which is the
+# standard way to credit derived work. The Zenodo concept DOI is added under
+# `identifiers:` once the v1.0.0 GitHub release mints it.
 cff-version: 1.2.0
 message: "If you use this workflow, please cite it using the metadata below."
+version: "1.0.0"
+date-released: "2026-10-04"
 title: "imputation: a genotype QC and 1000 Genomes imputation Snakemake workflow"
 abstract: >-
   A Snakemake workflow that takes measured genotypes (VCF) and performs quality
