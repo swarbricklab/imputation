@@ -25,6 +25,12 @@ The final VCF of imputed SNP profiles is consumed by
 [Demuxafy](https://demultiplexing-doublet-detecting-docs.readthedocs.io/) to
 assign cells to donors in multiplexed 10x Chromium pools.
 
+> This workflow was **adapted from the Powell Lab / sceQTL-Gen consortium imputation
+> pipeline** ([powellgenomicslab/SNP_imputation_1000g_hg38](https://github.com/powellgenomicslab/SNP_imputation_1000g_hg38)).
+> See [`docs/UPSTREAM_DIFFERENCES.md`](docs/UPSTREAM_DIFFERENCES.md) for exactly how
+> this version differs (and how it reproduces the original's output). Citation details
+> are in [`CITATION.cff`](CITATION.cff) and under [Attribution](#attribution) below.
+
 ## Inputs (from `genotyping`)
 
 - **VCF** — genotype calls for all samples (hg19 for QC, hg38 for imputation)
@@ -101,18 +107,18 @@ dvc pull
 # Or, without remote access, re-download straight from the public source URLs:
 dvc update resources/eQTLGenImpRef.tar.gz.dvc resources/1000G.tar.gz.dvc \
            resources/bed/hg38exonsUCSC.bed.dvc \
-           resources/liftover/GRCh37_to_GRCh38.chain.gz.dvc \
-           resources/tools/GenotypeHarmonizer-1.4.23-dist.tar.gz.dvc \
-           resources/tools/minimac4-1.0.2-Linux.sh.dvc
+           resources/liftover/GRCh37_to_GRCh38.chain.gz.dvc
 
-./prep.sh    # extract the archives into place (~160 GB); tarballs can then be deleted
+./prep.sh    # extract the archives into place; tarballs can then be deleted
 ```
 
-This workflow was **adapted from the Powell Lab / sceQTL-Gen consortium
-imputation pipeline**
+## Attribution
+
+Adapted from the Powell Lab / sceQTL-Gen consortium imputation pipeline
 ([powellgenomicslab/SNP_imputation_1000g_hg38](https://github.com/powellgenomicslab/SNP_imputation_1000g_hg38)),
-itself developed for the sceQTL-Gen WG1 pipeline. If you use this workflow,
-please cite:
+itself developed for the sceQTL-Gen WG1 pipeline — see
+[`docs/UPSTREAM_DIFFERENCES.md`](docs/UPSTREAM_DIFFERENCES.md) for the differences.
+If you use this workflow, please cite:
 
 - van der Wijst *et al.* (2020), *eLife* — the sceQTL-Gen / single-cell eQTL
   reference approach.
