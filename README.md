@@ -57,11 +57,13 @@ The rules drive standard population-genetics tooling:
 | Imputation | `Minimac4` |
 
 > **Tools are public and version-pinned.** The former monolithic image
-> (`SNP_imputation_1000g_hg38.sif`) has been retired in favour of per-rule conda
-> environments (`workflow/envs/`), each pinning a public, versioned tool; a few
-> rules use pinned public biocontainers (e.g. `bcftools:1.21`). The two tools with
-> no bioconda package (GenotypeHarmonizer, Minimac4 1.0.2) are fetched from public
-> GitHub releases via `dvc import-url`. See issue #23.
+> (`SNP_imputation_1000g_hg38.sif`) has been retired: every rule now runs from a
+> pinned, public per-rule OCI image under `ghcr.io/swarbricklab` (built with
+> absconda), selected via the `containers:` map in the config. The two tools with
+> no bioconda package (GenotypeHarmonizer, Minimac4 1.0.2) are baked into their
+> images; one rule uses the public `quay.io/biocontainers/bcftools` image. Per-rule
+> `conda:` directives are kept (commented) as a fallback. Tool versions are pinned to
+> match the retired `.sif` — see `docs/UPSTREAM_DIFFERENCES.md`. See issue #23.
 
 ## Reference data and provenance
 
@@ -74,8 +76,10 @@ access to any private registry:
 - `resources/1000G.tar.gz` — 1000 Genomes phase-3 plink (ancestry QC)
 - `resources/bed/hg38exonsUCSC.bed` — hg38 exon BED
 - `resources/liftover/GRCh37_to_GRCh38.chain.gz` — Ensembl GRCh37→GRCh38 liftover chain
-- `resources/tools/` — GenotypeHarmonizer and Minimac4 (tools with no bioconda package)
 - `resources/genomes/chr_map/`, `resources/genomes/GRCh38_chr.fai` — small, git-tracked
+
+(GenotypeHarmonizer and Minimac4 are no longer provisioned as reference data —
+they ship inside the per-rule container images.)
 
 Fetch, then extract into the paths the config/rules expect:
 
