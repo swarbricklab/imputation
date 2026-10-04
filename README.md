@@ -156,4 +156,5 @@ Public, citable (`CITATION.cff`), and reproducible from public inputs — ready 
 output byte-for-byte except for cosmetic header timestamps and record/sample ordering
 (`docs/UPSTREAM_DIFFERENCES.md` §3). Deliberate divergences from the upstream
 sc-eQTLGen pipeline are documented in `docs/UPSTREAM_DIFFERENCES.md`; planned
-post-1.0 improvements are tracked in `docs/PUBLICATION_READINESS.md`.
+post-1.0 improvements are tracked in the
+[issue tracker](https://github.com/swarbricklab/imputation/issues).
