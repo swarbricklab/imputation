@@ -20,6 +20,9 @@ rule subset_plink_by_ancestry:
         pgen=temp(out_dir/"subset_ancestry/{ancestry}_subset.pgen"),
         psam=temp(out_dir/"subset_ancestry/{ancestry}_subset.psam"),
         pvar=temp(out_dir/"subset_ancestry/{ancestry}_subset.pvar")
+    params:
+        in_pfx=lambda w, input: pfx(input.pgen, ".pgen"),
+        out_pfx=lambda w, output: pfx(output.pgen, ".pgen")
     log:
         logs/"subset_plink_by_ancestry/subset_{ancestry}.log"
     container:
@@ -28,18 +31,13 @@ rule subset_plink_by_ancestry:
     #     "../envs/crossmap.yaml"
     shell:
         """
-        in_pgen={input.pgen}
-        in_prefix=${{in_pgen%.pgen}}
-        out_pgen={output.pgen}
-        out_prefix=${{out_pgen%.pgen}}
-
         plink2 --threads {threads} \
-            --pfile $in_prefix \
+            --pfile {params.in_pfx} \
             --keep {input.keep}  \
             --max-alleles 2 \
             --make-pgen 'psam-cols=fid,parents,sex,phenos' \
-            --out $out_prefix
-        mv ${{out_prefix}}.log {log}
+            --out {params.out_pfx}
+        mv {params.out_pfx}.log {log}
         """
 
 # Converts BIM to BED and converts the BED file via CrossMap.
@@ -59,7 +57,9 @@ rule crossmap:
         excluded_ids=temp(out_dir/"crossmapped/{ancestry}_excluded_ids.txt"),
         unmap=temp(out_dir/"crossmapped/{ancestry}_crossmap_output.bed.unmap")
     params:
-        chain_file = config['refs']['chain']
+        chain_file = config['refs']['chain'],
+        in_pfx=lambda w, input: pfx(input.pgen, ".pgen"),
+        out_pfx=lambda w, output: pfx(output.bed, ".bed")
     container:
         config['containers']['crossmap']
     # conda:
@@ -72,17 +72,12 @@ rule crossmap:
         CrossMap.py bed {params.chain_file} {output.inbed} {output.outbed}
         awk '{{print $4}}' {output.outbed}.unmap > {output.excluded_ids}
 
-        in_pgen={input.pgen}
-        in_prefix=${{in_pgen%.pgen}}
-        out_bed={output.bed}
-        out_prefix=${{out_bed%.bed}}
-
-        plink2 --pfile $in_prefix \
+        plink2 --pfile {params.in_pfx} \
             --exclude {output.excluded_ids} \
             --make-bed \
             --output-chr MT \
-            --out $out_prefix
-        mv ${{out_prefix}}.log {log}
+            --out {params.out_pfx}
+        mv {params.out_pfx}.log {log}
 
         awk -F'\t' 'BEGIN {{OFS=FS}} {{print $1,$4,0,$2,$6,$5}}' {output.outbed} > {output.bim}
         """
@@ -96,6 +91,9 @@ rule sort_bed:
         bed=temp(out_dir/"crossmapped_sorted/{ancestry}_crossmapped_sorted.bed"),
         bim=temp(out_dir/"crossmapped_sorted/{ancestry}_crossmapped_sorted.bim"),
         fam=temp(out_dir/"crossmapped_sorted/{ancestry}_crossmapped_sorted.fam")
+    params:
+        in_pfx=lambda w, input: pfx(input.bed, ".bed"),
+        out_pfx=lambda w, output: pfx(output.bed, ".bed")
     log:
         logs/"sort_bed/sort_bed_{ancestry}.log"
     container:
@@ -104,17 +102,12 @@ rule sort_bed:
     #     "../envs/plink.yaml"
     shell:
         """
-        in_bed={input.bed}
-        in_prefix=${{in_bed%.bed}}
-        out_bed={output.bed}
-        out_prefix=${{out_bed%.bed}}
-
-        plink2 --bfile $in_prefix \
+        plink2 --bfile {params.in_pfx} \
             --make-bed \
             --max-alleles 2 \
             --output-chr MT \
-            --out $out_prefix
-        mv ${{out_prefix}}.log {log}
+            --out {params.out_pfx}
+        mv {params.out_pfx}.log {log}
         """
 
 
@@ -132,7 +125,9 @@ rule harmonize_hg38:
         updates=temp(out_dir/"harmonize_hg38/{ancestry}_idUpdates.txt")
     params:
         # In-image path (GenotypeHarmonizer is not on bioconda; container-only).
-        jar = "/opt/GenotypeHarmonizer-1.4.23/GenotypeHarmonizer.jar"
+        jar = "/opt/GenotypeHarmonizer-1.4.23/GenotypeHarmonizer.jar",
+        in_pfx=lambda w, input: pfx(input.bed, ".bed"),
+        out_pfx=lambda w, output: pfx(output.bed, ".bed")
     log:
         harmonizer=logs/"harmonize_hg38/harmonize_hg38_{ancestry}.log",
         snp_log=logs/"harmonize_hg38/snpLog_{ancestry}.log"
@@ -140,20 +135,15 @@ rule harmonize_hg38:
         config['containers']['genotypeharmonizer']
     shell:
         """
-        in_bed={input.bed}
-        in_prefix=${{in_bed%.bed}}
-        out_bed={output.bed}
-        out_prefix=${{out_bed%.bed}}
-
         java -Xmx{resources.java_mem}g -jar {params.jar}\
-            --input $in_prefix \
+            --input {params.in_pfx} \
             --inputType PLINK_BED \
             --ref {input.vcf} \
             --refType VCF \
             --update-id \
-            --output $out_prefix
-        mv $(dirname $out_bed)/{wildcards.ancestry}.log {log.harmonizer}
-        mv $(dirname $out_bed)/{wildcards.ancestry}_snpLog.log {log.snp_log}
+            --output {params.out_pfx}
+        mv $(dirname {output.bed})/{wildcards.ancestry}.log {log.harmonizer}
+        mv $(dirname {output.bed})/{wildcards.ancestry}_snpLog.log {log.snp_log}
         """
 
 rule plink_to_vcf:
@@ -164,6 +154,9 @@ rule plink_to_vcf:
     output:
         vcf=temp(out_dir/"harmonize_hg38/{ancestry}_harmonised_hg38.vcf.gz"),
         index=temp(out_dir/"harmonize_hg38/{ancestry}_harmonised_hg38.vcf.gz.csi")
+    params:
+        in_pfx=lambda w, input: pfx(input.bed, ".bed"),
+        out_pfx=lambda w, output: pfx(output.vcf, ".vcf.gz")
     log:
         logs/"plink_to_vcf_{ancestry}.log"
     container:
@@ -172,19 +165,14 @@ rule plink_to_vcf:
     #     "../envs/plink-bcftools.yaml"
     shell:
         """
-        in_bed={input.bed}
-        in_prefix=${{in_bed%.bed}}
-        out_vcf={output.vcf}
-        out_prefix=${{out_vcf%.vcf.gz}}
-
-        plink2 --bfile $in_prefix \
+        plink2 --bfile {params.in_pfx} \
             --recode vcf id-paste=iid \
             --chr 1-22 \
-            --out $out_prefix
+            --out {params.out_pfx}
 
-        mv ${{out_prefix}}.log {log}
+        mv {params.out_pfx}.log {log}
 
-        bgzip ${{out_prefix}}.vcf
+        bgzip {params.out_pfx}.vcf
         bcftools index {output.vcf}
         """
 
@@ -257,7 +245,8 @@ rule het:
         passed=temp(out_dir/"het/{ancestry}_het_passed.inds"),
         passed_list=temp(out_dir/"het/{ancestry}_het_passed.txt")
     params:
-        script=workflow.source_path("../scripts/filter_het.R")
+        script=workflow.source_path("../scripts/filter_het.R"),
+        het_pfx=lambda w, output: pfx(output.het, ".het")
     log:
         logs/"het/het_{ancestry}.log"
     container:
@@ -266,12 +255,10 @@ rule het:
     #     "../envs/het.yaml"
     shell:
         """
-        het={output.het}
-        het_base=${{het%.het}}
         gunzip -c {input.vcf} \
             | sed 's/^##fileformat=VCFv4.3/##fileformat=VCFv4.2/' \
             > {output.tmp_vcf} 2> {log}
-        vcftools --vcf {output.tmp_vcf} --het --out $het_base 2>> {log}
+        vcftools --vcf {output.tmp_vcf} --het --out {params.het_pfx} 2>> {log}
         Rscript {params.script} {output.het} {output.inds} {output.passed} {output.passed_list} 2>> {log}
         """
 
@@ -316,6 +303,8 @@ rule calculate_missingness:
         tmp_vcf=temp(out_dir/"filter_preimpute_vcf/{ancestry}_het_filtered.vcf"),
         miss=temp(out_dir/"filter_preimpute_vcf/{ancestry}_genotypes.imiss"),
         individuals=temp(out_dir/"genotype_donor_annotation/{ancestry}_individuals.tsv")
+    params:
+        out_pfx=lambda w, output: pfx(output.miss, ".imiss")
     log:
         logs/"calculate_missingness/missingness_{ancestry}.log"
     container:
@@ -328,9 +317,7 @@ rule calculate_missingness:
             | sed 's/^##fileformat=VCFv4.3/##fileformat=VCFv4.2/' \
             > {output.tmp_vcf}
 
-        out_miss={output.miss}
-        out_prefix=${{out_miss%.imiss}}
-        vcftools --gzvcf {output.tmp_vcf} --missing-indv --out $out_prefix 2> {log}
+        vcftools --gzvcf {output.tmp_vcf} --missing-indv --out {params.out_pfx} 2> {log}
 
         bcftools query -l {input.filtered_vcf} >> {output.individuals} 2>> {log}
         """
@@ -362,6 +349,8 @@ rule eagle_prephasing:
         phasing_file = config['refs']['phasing'] + "chr{chr}.bcf"
     output:
         vcf=temp(out_dir/"eagle_prephasing/{ancestry}_chr{chr}_phased.vcf.gz")
+    params:
+        out_pfx=lambda w, output: pfx(output.vcf, ".vcf.gz")
     log:
         logs/"eagle/eagle_prephasing_{ancestry}_chr{chr}.log"
     container:
@@ -370,13 +359,11 @@ rule eagle_prephasing:
     #     "../envs/eagle.yaml"
     shell:
         """
-        out_vcf={output.vcf}
-        out_prefix=${{out_vcf%.vcf.gz}}
         eagle --vcfTarget={input.vcf} \
             --vcfRef={input.phasing_file} \
             --geneticMapFile={input.map_file} \
             --chrom={wildcards.chr} \
-            --outPrefix=$out_prefix \
+            --outPrefix={params.out_pfx} \
             --numThreads={resources.threads} \
             > {log} 2>&1
         """
@@ -392,18 +379,17 @@ rule minimac_imputation:
         # On PATH inside the image (Minimac4 1.0.2 is not on bioconda; container-only).
         minimac4 = "minimac4",
         chunk_length = config["params"]["chunk_length"],
-        impute_format = config['params']['impute_format']
+        impute_format = config['params']['impute_format'],
+        out_pfx=lambda w, output: pfx(output.vcf, ".dose.vcf.gz")
     log:
         logs/"minimac/minimac_{ancestry}_chr{chr}.log"
     container:
         config['containers']['minimac4']
     shell:
         """
-        out_vcf={output.vcf}
-        out_prefix=${{out_vcf%.dose.vcf.gz}}
         {params.minimac4} --refHaps {input.impute_file} \
             --haps {input.vcf} \
-            --prefix $out_prefix \
+            --prefix {params.out_pfx} \
             --format {params.impute_format} \
             --noPhoneHome \
             --cpus {resources.threads} \
@@ -558,6 +544,8 @@ rule filter_exons_indels:
         bed=config['refs']['bed']
     output:
         vcf=temp(out_dir/"filter_exons_indels/imputed_filtered_maf_r2.hg38.recode.vcf.gz")
+    params:
+        out_pfx=lambda w, output: pfx(output.vcf, ".recode.vcf.gz")
     log:
         logs/"filter_exons_indels/filter_exons_indels.log"
     container:
@@ -566,17 +554,15 @@ rule filter_exons_indels:
     #     "../envs/vcftools.yaml"
     shell:
         """
-        out_vcf={output.vcf}
-        out_prefix=${{out_vcf%.recode.vcf.gz}}
         vcftools --gzvcf {input.vcf} \
             --max-alleles 2 \
             --remove-indels \
             --bed {input.bed} \
             --recode \
             --recode-INFO-all \
-            --out $out_prefix \
+            --out {params.out_pfx} \
             2> {log}
-        bgzip ${{out_prefix}}.recode.vcf 2>> {log}
+        bgzip {params.out_pfx}.recode.vcf 2>> {log}
         """
 
 rule rename_chromosomes:

@@ -1,5 +1,8 @@
 import pandas as pd
 
+# pfx() (fileset-prefix helper) lives in rules/common.smk, included by the Snakefile.
+
+
 rule reheader_vcf:
     input:
         vcf=config['deps']['input_vcf'],
@@ -23,6 +26,8 @@ rule run_plink:
         psam=temp(out_dir/"plink/plink.psam"),
         pgen=temp(out_dir/"plink/plink.pgen"),
         pvar=temp(out_dir/"plink/plink.pvar")
+    params:
+        out_pfx=lambda w, output: pfx(output.pgen, ".pgen")
     log:
         logs/"plink/run_plink.log"
     container:
@@ -31,15 +36,13 @@ rule run_plink:
     #     "../envs/plink.yaml"
     shell:
         """
-        pgen={output.pgen}
-        plink_prefix=${{pgen%.pgen}}
         plink2 \
             --vcf {input.vcf} \
             --make-pgen 'psam-cols='fid,parents,sex,phenos \
-            --out $plink_prefix \
+            --out {params.out_pfx} \
             --psam {input.psam} \
             --sort-vars
-        mv ${{plink_prefix}}.log {log}
+        mv {params.out_pfx}.log {log}
         """
 
 rule calculate_missingness:
@@ -49,6 +52,9 @@ rule calculate_missingness:
         pvar=rules.run_plink.output.pvar
     output:
         smiss=temp(out_dir/"indiv_missingness/sample_missingness.smiss")
+    params:
+        in_pfx=lambda w, input: pfx(input.pgen, ".pgen"),
+        out_pfx=lambda w, output: pfx(output.smiss, ".smiss")
     log:
         logs/"plink/calculate_missingness.log"
     container:
@@ -57,15 +63,11 @@ rule calculate_missingness:
     #     "../envs/plink.yaml"
     shell:
         """
-        in_pgen={input.pgen}
-        in_prefix=${{in_pgen%.pgen}}
-        out_smiss={output.smiss}
-        out_prefix=${{out_smiss%.smiss}}
         plink2 --threads {threads} \
-            --pfile $in_prefix \
+            --pfile {params.in_pfx} \
             --missing \
-            --out $out_prefix
-        mv ${{out_prefix}}.log {log}
+            --out {params.out_pfx}
+        mv {params.out_pfx}.log {log}
         """
 
 rule indiv_missingness:
@@ -79,7 +81,9 @@ rule indiv_missingness:
         pvar=out_dir/"indiv_missingness/indiv_missingness.pvar",
         psam=out_dir/"indiv_missingness/indiv_missingness.psam"
     params:
-        mind = config["params"]["indiv_missingness_mind"]
+        mind = config["params"]["indiv_missingness_mind"],
+        in_pfx=lambda w, input: pfx(input.pgen, ".pgen"),
+        out_pfx=lambda w, output: pfx(output.pgen, ".pgen")
     log:
         logs/"plink/indiv_missingness.log"
     container:
@@ -88,16 +92,12 @@ rule indiv_missingness:
     #     "../envs/plink.yaml"
     shell:
         """
-        in_pgen={input.pgen}
-        in_prefix=${{in_pgen%.pgen}}
-        out_bed={output.pgen}
-        out_prefix=${{out_bed%.pgen}}
         plink2 --threads {threads} \
-            --pfile $in_prefix \
+            --pfile {params.in_pfx} \
             --make-pgen 'psam-cols='fid,parents,sex,phenos \
             --mind {params.mind} \
-            --out $out_prefix
-        mv ${{out_prefix}}.log {log}
+            --out {params.out_pfx}
+        mv {params.out_pfx}.log {log}
         """
 
 rule check_sex:
@@ -113,6 +113,9 @@ rule check_sex:
         sexcheck_tsv=temp(out_dir/"check_sex/check_sex.sexcheck.tsv"),
         hh=temp(out_dir/"check_sex/check_sex.hh"),
         no=temp(out_dir/"check_sex/check_sex.nosex")
+    params:
+        in_pfx=lambda w, input: pfx(input.pgen, ".pgen"),
+        out_pfx=lambda w, output: pfx(output.bed, ".bed")
     log:
         logs/"plink/check_sex.log"
     container:
@@ -121,25 +124,20 @@ rule check_sex:
     #     "../envs/plink.yaml"
     shell:
         """
-        in_pgen={input.pgen}
-        in_prefix=${{in_pgen%.pgen}}
-        out_bed={output.bed}
-        out_prefix=${{out_bed%.bed}}
-
         plink2 --threads {threads} \
-            --pfile $in_prefix \
+            --pfile {params.in_pfx} \
             --make-bed \
             --max-alleles 2 \
-            --out $out_prefix
-        mv ${{out_prefix}}.log {log}
+            --out {params.out_pfx}
+        mv {params.out_pfx}.log {log}
 
         plink --threads {threads} \
-            --bfile $out_prefix \
+            --bfile {params.out_pfx} \
             --check-sex \
             --biallelic-only strict \
-            --out $out_prefix
-        cat ${{out_prefix}}.log >> {log}
-        rm ${{out_prefix}}.log
+            --out {params.out_pfx}
+        cat {params.out_pfx}.log >> {log}
+        rm {params.out_pfx}.log
 
         awk '{{$1=$1}}1' OFS="\t" {output.sexcheck} > {output.sexcheck_tsv}
         touch {output.no}
@@ -179,6 +177,11 @@ rule extract_common_snps:
         pgen_1000g=temp(out_dir/"common_snps/subset_1000g.pgen"),
         pvar_1000g=temp(out_dir/"common_snps/subset_1000g.pvar"),
         psam_1000g=temp(out_dir/"common_snps/subset_1000g.psam")
+    params:
+        in_pfx=lambda w, input: pfx(input.pgen, ".pgen"),
+        out_pfx=lambda w, output: pfx(output.pgen, ".pgen"),
+        in_pfx_1000g=lambda w, input: pfx(input.pgen_1000g, ".pgen"),
+        out_pfx_1000g=lambda w, output: pfx(output.pgen_1000g, ".pgen")
     log:
         logs/"plink/extract_common_snps.log"
     container:
@@ -188,35 +191,22 @@ rule extract_common_snps:
     shell:
         """
         exec > {log} 2>&1
-        in_pgen={input.pgen}
-        in_prefix=${{in_pgen%.pgen}}
-        echo "Input prefix: $in_prefix"
-        out_pgen={output.pgen}
-        out_prefix=${{out_pgen%.pgen}}
-        echo "Output prefix: $out_prefix"
 
         cmd="plink2 --threads {threads} \
-            --pfile $in_prefix \
+            --pfile {params.in_pfx} \
             --extract {input.snps_data} \
             --make-pgen 'psam-cols='fid,parents,sex,phenos \
-            --out $out_prefix"
+            --out {params.out_pfx}"
         echo $cmd; eval $cmd
-        rm ${{out_prefix}}.log
-
-        in_pgen_1000g={input.pgen_1000g}
-        in_prefix_1000g=${{in_pgen_1000g%.pgen}}
-        echo "Input prefix: $in_prefix_1000g"
-        out_pgen_1000g={output.pgen_1000g}
-        out_prefix_1000g=${{out_pgen_1000g%.pgen}}
-        echo "Output prefix: $out_prefix_1000g"
+        rm {params.out_pfx}.log
 
         cmd="plink2 --threads {threads} \
-            --pfile $in_prefix_1000g \
+            --pfile {params.in_pfx_1000g} \
             --extract {input.snps_1000g} \
             --make-pgen \
-            --out $out_prefix_1000g"
+            --out {params.out_pfx_1000g}"
         echo $cmd; eval $cmd
-        rm ${{out_prefix_1000g}}.log
+        rm {params.out_pfx_1000g}.log
         """
 
 rule prune_1000g:
@@ -242,7 +232,11 @@ rule prune_1000g:
         data_1000g_key=temp(out_dir/"common_snps/subset_pruned_data_1000g_key.txt"),
         SNPs2keep=temp(out_dir/"common_snps/SNPs2keep.txt")
     params:
-        ld_prune=config['params']['ld_prune']
+        ld_prune=config['params']['ld_prune'],
+        in_pfx_1000g=lambda w, input: pfx(input.bed_1000g, ".pgen"),
+        out_pfx_1000g=lambda w, output: pfx(output.bed_1000g, ".pgen"),
+        in_pfx=lambda w, input: pfx(input.bed, ".pgen"),
+        out_pfx=lambda w, output: pfx(output.bed, ".pgen")
     log:
         logs/"plink/prune_1000g.log"
     container:
@@ -252,23 +246,19 @@ rule prune_1000g:
     shell:
         """
         exec > {log} 2>&1
-        in_pgen_1000g={input.bed_1000g}
-        in_prefix_1000g=${{in_pgen_1000g%.pgen}}
-        out_pgen_1000g={output.bed_1000g}
-        out_prefix_1000g=${{out_pgen_1000g%.pgen}}  # out_dir/"common_snps/subset_pruned_1000g
 
         plink2 --threads {threads} \
-            --pfile $in_prefix_1000g \
+            --pfile {params.in_pfx_1000g} \
             --indep-pairwise {params.ld_prune} \
-            --out $out_prefix_1000g
-        rm ${{out_prefix_1000g}}.log
+            --out {params.out_pfx_1000g}
+        rm {params.out_pfx_1000g}.log
 
         plink2 --threads {threads} \
-            --pfile $in_prefix_1000g \
+            --pfile {params.in_pfx_1000g} \
             --extract {output.prune_out_1000g} \
             --make-pgen \
-            --out $out_prefix_1000g
-        rm ${{out_prefix_1000g}}.log
+            --out {params.out_pfx_1000g}
+        rm {params.out_pfx_1000g}.log
 
         if [[ $(grep "##" {input.bim} | wc -l) > 0 ]]
         then
@@ -282,16 +272,12 @@ rule prune_1000g:
             | awk 'BEGIN{{FS=OFS="\t"}}{{print $NF}}' \
             > {output.prune_out}
 
-        in_pgen={input.bed}
-        in_prefix=${{in_pgen%.pgen}}
-        out_pgen={output.bed}
-        out_prefix=${{out_pgen%.pgen}}
         plink2 --threads {threads} \
-            --pfile $in_prefix \
+            --pfile {params.in_pfx} \
             --extract {output.prune_out} \
             --make-pgen 'psam-cols='fid,parents,sex,phenos \
-            --out $out_prefix
-        rm ${{out_prefix}}.log
+            --out {params.out_pfx}
+        rm {params.out_pfx}.log
 
         cp {output.bim} {output.bim_old}
         grep -v "#" {output.bim_old} \
@@ -313,6 +299,9 @@ rule final_pruning: ### put in contingency for duplicated snps - remove from bot
         bed=temp(out_dir/"common_snps/final_subset_pruned_data.pgen"),
         bim=temp(out_dir/"common_snps/final_subset_pruned_data.pvar"),
         fam=temp(out_dir/"common_snps/final_subset_pruned_data.psam")
+    params:
+        in_pfx=lambda w, input: pfx(input.bed, ".pgen"),
+        out_pfx=lambda w, output: pfx(output.bed, ".pgen")
     log:
         logs/"plink/final_pruning.log"
     container:
@@ -321,16 +310,12 @@ rule final_pruning: ### put in contingency for duplicated snps - remove from bot
     #     "../envs/plink.yaml"
     shell:
         """
-        in_pgen={input.bed}
-        in_prefix=${{in_pgen%.pgen}}
-        out_pgen={output.bed}
-        out_prefix=${{out_pgen%.pgen}}
         plink2 --rm-dup 'force-first' \
             --threads {threads} \
-            --pfile $in_prefix \
+            --pfile {params.in_pfx} \
             --make-pgen 'psam-cols='fid,parents,sex,phenos \
-            --out $out_prefix
-        mv ${{out_prefix}}.log {log}
+            --out {params.out_pfx}
+        mv {params.out_pfx}.log {log}
         """
 
 # KING-robust kinship is ancestry-agnostic, so this runs on the pooled pruned
@@ -351,7 +336,9 @@ rule relatedness_check:
         in_id=temp(out_dir/"relatedness/relatedness_check.king.cutoff.in.id")
     params:
         king_cutoff=config["params"]["king_cutoff"],
-        king_table_cutoff=config["params"]["king_table_cutoff"]
+        king_table_cutoff=config["params"]["king_table_cutoff"],
+        in_pfx=lambda w, input: pfx(input.bed, ".pgen"),
+        out_pfx=lambda w, output: pfx(output.kin0, ".kin0")
     log:
         logs/"plink/relatedness_check.log"
     container:
@@ -360,24 +347,19 @@ rule relatedness_check:
     #     "../envs/plink.yaml"
     shell:
         """
-        in_pgen={input.bed}
-        in_prefix=${{in_pgen%.pgen}}
-        out_kin0={output.kin0}
-        out_prefix=${{out_kin0%.kin0}}
-
         plink2 --threads {threads} \
-            --pfile $in_prefix \
+            --pfile {params.in_pfx} \
             --make-king-table \
             --king-table-filter {params.king_table_cutoff} \
-            --out $out_prefix
-        mv ${{out_prefix}}.log {log}
+            --out {params.out_pfx}
+        mv {params.out_pfx}.log {log}
 
         plink2 --threads {threads} \
-            --pfile $in_prefix \
+            --pfile {params.in_pfx} \
             --king-cutoff {params.king_cutoff} \
-            --out $out_prefix
-        cat ${{out_prefix}}.log >> {log}
-        rm ${{out_prefix}}.log
+            --out {params.out_pfx}
+        cat {params.out_pfx}.log >> {log}
+        rm {params.out_pfx}.log
         """
 
 ### use PCA from plink for PCA and projection
@@ -392,6 +374,9 @@ rule pca_1000g:
         eig_all=temp(out_dir/"pca_projection/subset_pruned_1000g_pcs.eigenvec.allele"),
         eig_vec=temp(out_dir/"pca_projection/subset_pruned_1000g_pcs.eigenvec"),
         eig=temp(out_dir/"pca_projection/subset_pruned_1000g_pcs.eigenval")
+    params:
+        in_pfx=lambda w, input: pfx(input.pgen_1000g, ".pgen"),
+        out_pfx=lambda w, output: pfx(output.eig, ".eigenval")
     log:
         logs/"plink/pca_1000g.log"
     container:
@@ -400,16 +385,12 @@ rule pca_1000g:
     #     "../envs/plink.yaml"
     shell:
         """
-        in_pgen={input.pgen_1000g}
-        in_prefix=${{in_pgen%.pgen}}
-        out_eig={output.eig}
-        out_prefix=${{out_eig%.eigenval}}
         plink2 --threads {threads} \
-            --pfile $in_prefix \
+            --pfile {params.in_pfx} \
             --freq counts \
             --pca allele-wts \
-            --out $out_prefix
-        mv ${{out_prefix}}.log {log}
+            --out {params.out_pfx}
+        mv {params.out_pfx}.log {log}
         """
 
 ### use plink pca results to plot with R ###
@@ -426,6 +407,11 @@ rule pca_project:
     output:
         projected_scores=temp(out_dir/"pca_projection/final_subset_pruned_data_pcs.sscore"),
         projected_1000g_scores=temp(out_dir/"pca_projection/subset_pruned_1000g_pcs_projected.sscore")
+    params:
+        in_pfx=lambda w, input: pfx(input.pgen, ".pgen"),
+        out_pfx=lambda w, output: pfx(output.projected_scores, ".sscore"),
+        in_pfx_1000g=lambda w, input: pfx(input.pgen_1000g, ".pgen"),
+        out_pfx_1000g=lambda w, output: pfx(output.projected_1000g_scores, ".sscore")
     log:
         logs/"plink/pca_project.log"
     container:
@@ -434,30 +420,22 @@ rule pca_project:
     #     "../envs/plink.yaml"
     shell:
         """
-        in_pgen={input.pgen}
-        in_prefix=${{in_pgen%.pgen}}
-        out_scores={output.projected_scores}
-        out_prefix=${{out_scores%.sscore}}
         plink2 --threads {threads} \
-            --pfile $in_prefix \
+            --pfile {params.in_pfx} \
             --read-freq {input.frq} \
             --score {input.scores} 2 5 header-read no-mean-imputation variance-standardize \
             --score-col-nums 6-15 \
-            --out $out_prefix
-        mv ${{out_prefix}}.log {log}
+            --out {params.out_pfx}
+        mv {params.out_pfx}.log {log}
 
-        in_pgen_1000g={input.pgen_1000g}
-        in_prefix_1000g=${{in_pgen_1000g%.pgen}}
-        out_scores_1000g={output.projected_1000g_scores}
-        out_prefix_1000g=${{out_scores_1000g%.sscore}}
         plink2 --threads {threads} \
-            --pfile $in_prefix_1000g \
+            --pfile {params.in_pfx_1000g} \
             --read-freq {input.frq} \
             --score {input.scores} 2 5 header-read no-mean-imputation variance-standardize \
             --score-col-nums 6-15 \
-            --out $out_prefix_1000g
-        cat ${{out_prefix_1000g}}.log >> {log}
-        rm ${{out_prefix_1000g}}.log
+            --out {params.out_pfx_1000g}
+        cat {params.out_pfx_1000g}.log >> {log}
+        rm {params.out_pfx_1000g}.log
        """
 
 rule pca_projection_assign:
@@ -571,6 +549,9 @@ rule update_sex_ancestry:
         pgen=final/"post_qc.pgen",
         pvar=final/"post_qc.pvar",
         psam=final/"post_qc.psam"
+    params:
+        in_pfx=lambda w, input: pfx(input.pgen, ".pgen"),
+        out_pfx=lambda w, output: pfx(output.pgen, ".pgen")
     log:
         logs/"update_sex_ancestry.log"
     container:
@@ -579,18 +560,13 @@ rule update_sex_ancestry:
     #     "../envs/plink.yaml"
     shell:
         """
-        in_pgen={input.pgen}
-        in_prefix=${{in_pgen%.pgen}}
-        out_pgen={output.pgen}
-        out_prefix=${{out_pgen%.pgen}}
-
         plink2 --threads {threads} \
-            --pfile $in_prefix \
+            --pfile {params.in_pfx} \
             --update-sex {input.update_sex} \
             --remove {input.remove_indiv} \
             --make-pgen 'psam-cols='fid,parents,sex,phenos \
-            --out $out_prefix
-        mv ${{out_prefix}}.log {log}
+            --out {params.out_pfx}
+        mv {params.out_pfx}.log {log}
         """
 
 rule export_sample_metadata:

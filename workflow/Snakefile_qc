@@ -7,6 +7,7 @@ logs = Path(config['outs']['logs'])
 final = Path(config['outs']['post_qc_plink'])
 metadata_csv = out_dir / "derived_sample_metadata.csv"
 
+include: "rules/common.smk"
 include: "rules/qc.smk"
 
 rule all:
