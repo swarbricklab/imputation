@@ -19,9 +19,9 @@ the patterns established there.
 > and preflight are harmonised with genotyping (#26 via #32), and the rule graphs
 > are regenerated against the current rules. **The remaining Goal-1 work is
 > citability (§1): make the repo public, review `CITATION.cff`'s author list, then
-> tag v1.0.0 + wire Zenodo for the DOI.** Two small loose ends remain in §4
-> (`dvc push` the bundle; retire the now-unused `.sif` import). Items below are
-> annotated inline.
+> tag v1.0.0 + wire Zenodo for the DOI.** The §4 data loose ends are now closed
+> (bundle + liftover chain pushed to the remote; the unused `.sif` import retired).
+> Items below are annotated inline.
 
 ---
 
@@ -107,14 +107,15 @@ qx exec --internet --env dt3 -P a56 --storage gdata/a56+scratch/a56 \
       `resources/reference/hg38/imputation`).
 - [x] Retired the two private imports the bundle covers: `resources/reference.dvc`
       (79 GB Minimac4 ref) and `resources/genomes/hg38.dvc` (44 GB panel/phasing/QC).
-- [ ] `dvc push` the bundle to the imputation remote (data-mover). *(outstanding)*
+- [x] `dvc push`ed to the imputation remote (`gadi-imputation`): the eQTLGen
+      bundle (already present) and the GRCh37→GRCh38 liftover chain; `dvc status
+      -c` confirms the cache and remote are in sync.
 - [x] **`bed` and `1000g` are now public** — both tracked via public `dvc
-      import-url` (Dropbox); `chr_map` ships in-repo. All reference imports are
-      public *except* the vestigial `resources/imputation/SNP_imputation_1000g_hg38.sif.dvc`.
-- [ ] **Retire `resources/imputation/SNP_imputation_1000g_hg38.sif.dvc`** — it is
-      the only remaining *private* import and is no longer used by any rule (the
-      workflow graduated off the monolithic `.sif` in #33; it survives only in
-      comments). Remove it so the reference set is fully public. *(outstanding)*
+      import-url` (Dropbox); `chr_map` ships in-repo.
+- [x] **Retired `resources/imputation/SNP_imputation_1000g_hg38.sif.dvc`** (this
+      change) — it was the only remaining *private* import and was no longer used
+      by any rule (the workflow graduated off the monolithic `.sif` in #33; it
+      survives only in comments). The reference set is now fully public.
 
 ### 5. Harmonisation with genotyping (shared front-end; issue #26 in genotyping)
 - [x] Switch the nested `profiles/global` submodule URL **ssh → https** (public).
