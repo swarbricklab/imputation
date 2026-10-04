@@ -13,6 +13,16 @@ the same two-goal framing used for the
 The genotyping workflow completed Goal 1 and released v1.0.0; this plan reuses
 the patterns established there.
 
+> **Status (2026-10).** Most of Goal 1 is now done: references are public
+> (#22/#27), tool versions are recorded and every rule runs from a public
+> per-rule OCI image (#20/#23 via #31/#33 — done ahead of schedule), the profile
+> and preflight are harmonised with genotyping (#26 via #32), and the rule graphs
+> are regenerated against the current rules. **The remaining Goal-1 work is
+> citability (§1): make the repo public, review `CITATION.cff`'s author list, then
+> tag v1.0.0 + wire Zenodo for the DOI.** Two small loose ends remain in §4
+> (`dvc push` the bundle; retire the now-unused `.sif` import). Items below are
+> annotated inline.
+
 ---
 
 ## Goal 1 — publication-ready (no processing change)
@@ -32,17 +42,19 @@ the patterns established there.
 - [ ] Confirm the citation lineage with the authors (Võsa/eQTLGen →
       sceQTL-Gen WG1 → powellgenomicslab/SNP_imputation_1000g_hg38 (Neavin) →
       swarbricklab; van der Wijst 2020 eLife; Demuxafy / Neavin 2024 Genome Biol).
-- [ ] Regenerate the rule graphs once the workflow is runnable from public
-      inputs, and confirm they match the code (issue #11). NB: like genotyping,
-      the super-project's `run_*.sh` writes graphs to the super-project `docs/`,
-      not this repo's `docs/`, so they can drift — regenerate deliberately.
+- [x] Regenerate the rule graphs and confirm they match the code (issue #11).
+      Regenerated 2026-10 against the current rules (QC 18 rules, imputation 22);
+      the previous SVGs were from 2024 and had drifted (18 nodes). NB: like
+      genotyping, the super-project's `run_*.sh` writes graphs to the
+      super-project `docs/`, not this repo's `docs/`, so they can drift —
+      regenerate deliberately after rule changes.
 
 ### 3. Record & pin tool versions (issue #20)
-- [ ] The monolithic `SNP_imputation_1000g_hg38.sif` is opaque. As a Goal-1
-      *minimum*, record the exact version of every tool it bundles (bcftools,
-      plink/plink2, vcftools, Minimac4, Eagle, GenotypeHarmonizer, CrossMap,
-      Java) and its build provenance, so runs are reproducible and documented.
-      (Full graduation to per-tool images is Goal 2 / issue #23.)
+- [x] Tool versions recorded in `docs/UPSTREAM_DIFFERENCES.md` §1 (CrossMap 0.6.5,
+      plink 1.90b6.21 / plink2 2.00a3.7, GenotypeHarmonizer 1.4.23, bcftools
+      1.10.2, vcftools 0.1.16, Eagle 2.4.1, Minimac4 1.0.2), pinned to match the
+      retired `.sif`. Full graduation to per-tool **public** images was completed
+      ahead of schedule (#31/#33 — see §6), so this exceeds the Goal-1 minimum.
 
 ### 4. Public reference data (issue #22) — the main Goal-1 reproducibility blocker
 The QC and imputation references are private `dvc import`s from
@@ -95,31 +107,37 @@ qx exec --internet --env dt3 -P a56 --storage gdata/a56+scratch/a56 \
       `resources/reference/hg38/imputation`).
 - [x] Retired the two private imports the bundle covers: `resources/reference.dvc`
       (79 GB Minimac4 ref) and `resources/genomes/hg38.dvc` (44 GB panel/phasing/QC).
-- [ ] `dvc push` the bundle to the imputation remote (data-mover).
-- [ ] **`bed` and `1000g` remain private** — not in the bundle; need their public
-      sources confirmed before switching (won't fabricate URLs). `chr_map` is tiny
-      (ship in-repo). Then rewire config + `dvc.yaml` in the super-project (brca rewire).
+- [ ] `dvc push` the bundle to the imputation remote (data-mover). *(outstanding)*
+- [x] **`bed` and `1000g` are now public** — both tracked via public `dvc
+      import-url` (Dropbox); `chr_map` ships in-repo. All reference imports are
+      public *except* the vestigial `resources/imputation/SNP_imputation_1000g_hg38.sif.dvc`.
+- [ ] **Retire `resources/imputation/SNP_imputation_1000g_hg38.sif.dvc`** — it is
+      the only remaining *private* import and is no longer used by any rule (the
+      workflow graduated off the monolithic `.sif` in #33; it survives only in
+      comments). Remove it so the reference set is fully public. *(outstanding)*
 
 ### 5. Harmonisation with genotyping (shared front-end; issue #26 in genotyping)
 - [x] Switch the nested `profiles/global` submodule URL **ssh → https** (public).
-- [ ] Update the `snakemake_config` pin to the **generalised `nci` profile**
-      (env-templated `PROJECT`, `jobmode=pbspro`) that genotyping v1.0.0 uses,
-      and update `run_qc.sh` / `run_imputation.sh` from `profiles/global/nci_a56`
-      to `profiles/global/nci`; require `PROJECT` in the environment.
-- [ ] Adopt genotyping's `prep.sh` + read-only **preflight** (`--what check`)
-      pattern to verify containers/references/inputs before submitting jobs, and
-      call it from the run scripts (with a `SKIP_PREFLIGHT` opt-out).
+- [x] `run_qc.sh` / `run_imputation.sh` now use `profiles/global/nci` (the
+      generalised, env-templated `PROJECT` / `jobmode=pbspro` profile), not
+      `nci_a56`; submodule pinned accordingly.
+- [x] Adopted genotyping's `prep.sh` read-only **preflight** (`--what check`):
+      implemented in `prep.sh` and called from `run_qc.sh` / `run_imputation.sh`
+      with a `SKIP_PREFLIGHT` opt-out.
 
 ---
 
 ## Goal 2 — improvements (after v1.0.0)
 
-### 6. Graduate from the monolithic container (issue #23)
-Replace `SNP_imputation_1000g_hg38.sif` (used by ~29 rule invocations) with
-per-rule **public** biocontainers: `bcftools` (already partly done), `plink2`,
-`vcftools`, `minimac4`, `eagle`, `crossmap`, and a **GenotypeHarmonizer** image
-published to GHCR/Docker Hub (no public biocontainer exists — build one, as
-discussed). Pin every tag.
+### 6. Graduate from the monolithic container (issue #23) — ✅ DONE (ahead of schedule)
+Completed in #31/#33: `SNP_imputation_1000g_hg38.sif` is fully retired; every rule
+now runs from a per-rule **public** OCI image on `ghcr.io/swarbricklab`
+(`bcftools`, `plink`/`plink-bcftools`, `vcftools`, `minimac4`, `eagle`, `crossmap`,
+`het`, and a hand-built **GenotypeHarmonizer** image — no public biocontainer
+existed). Images are referenced via a `config['containers']` map (centralised in
+#35) with pinned tags; `conda:` directives are retained but commented so a
+conda-only fallback stays one edit away. The last cleanup is retiring the unused
+`.sif` DVC import (see §4).
 
 ### 7. Keep imputation permissive; move the tunable threshold to snp_demux (#24)
 `rule vcf_filter` (postimputation.smk) hardcodes
