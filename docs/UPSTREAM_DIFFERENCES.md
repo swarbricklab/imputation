@@ -141,3 +141,26 @@ demultiplexing):
 - **Portable execution** — Snakemake 7.32.4 (the `het_filter` param `remove` → `remove_outliers`,
   since `remove` is reserved); `nci` (PBS) + workflow profiles; runs as a submodule in a DVC
   super-project.
+
+## Known limitations
+
+Deliberate trade-offs for the array / tumour / demultiplexing use case; each is tracked for a
+possible goal-2 revisit (measurements below are from the 211-donor cohort).
+
+- **Ancestry assignment uses `pam` clustering, not `knn`.** We fixed WG1's positional
+  `scores[,2:11]` bug, but the sibling Powell repo later replaced pam clustering with a
+  supervised `knn` predictor — likely a better ancestry classifier
+  ([#41](https://github.com/swarbricklab/imputation/issues/41)).
+- **No provided-vs-inferred sex/ancestry gate.** The array front-end supplies no phenotype, so
+  the auto-`UPDATE` has nothing to catch; were real `SEX`/`Provided_Ancestry` supplied, WG1's
+  swap-detection gate would be absent (the mismatch report already exists, so this is mostly
+  plumbing) ([#42](https://github.com/swarbricklab/imputation/issues/42)).
+- **`post_maf` filters on Minimac's estimated MAF, not a cohort genotype recount.** It differs
+  from a `+fill-tags` GT recount by ~0.036 on average; ~4.8% of kept variants have a cohort GT
+  MAF < 0.05. For demultiplexing the cohort recount may be more appropriate
+  ([#43](https://github.com/swarbricklab/imputation/issues/43)).
+- **X/Y variants can carry missing genotypes.** Autosomes are fully imputed (0 missing); the
+  reinserted X/Y (genotyped, not imputed — WG1 has no X/Y) include sites with missing calls,
+  and there is no complete-cases filter ([#44](https://github.com/swarbricklab/imputation/issues/44)).
+- **Heterozygosity-outlier removal is off by default** (`het_remove_outliers: false`) — no
+  het-based sample QC runs unless enabled, intended for tumour/LOH cohorts (see *Bug fixes*).
