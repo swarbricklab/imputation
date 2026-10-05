@@ -18,18 +18,19 @@ It contains two workflows that run in sequence:
 These are the second and third stages of the SNP-based demultiplexing pipeline:
 
 ```
-genotyping  ->  imputation (this repo: QC + imputation)  ->  snp_demux (Demuxafy)
+[genotyping](https://github.com/swarbricklab/genotyping)  ->  imputation (this repo: QC + imputation)  ->  [snp_demux](https://github.com/swarbricklab/snp_demux) (Demuxafy)
 ```
 
-The final VCF of imputed SNP profiles is consumed by
+The final VCF of imputed SNP profiles is consumed by the [snp_demux](https://github.com/swarbricklab/snp_demux) workflow which uses
 [Demuxafy](https://demultiplexing-doublet-detecting-docs.readthedocs.io/) to
 assign cells to donors in multiplexed 10x Chromium pools.
 
-> This workflow was **adapted from the Powell Lab / sceQTL-Gen consortium imputation
-> pipeline** ([powellgenomicslab/SNP_imputation_1000g_hg38](https://github.com/powellgenomicslab/SNP_imputation_1000g_hg38)).
-> See [`docs/UPSTREAM_DIFFERENCES.md`](docs/UPSTREAM_DIFFERENCES.md) for exactly how
-> this version differs (and how it reproduces the original's output). Citation details
-> are in [`CITATION.cff`](CITATION.cff) and under [Attribution](#attribution) below.
+> This workflow was **adapted from the sc-eQTLGen consortium WG1 genotype-QC + imputation
+> pipeline** (Powell Lab / Garvan;
+> [sc-eQTLgen-consortium/WG1-pipeline-QC](https://github.com/sc-eQTLgen-consortium/WG1-pipeline-QC)).
+> See [`docs/UPSTREAM_DIFFERENCES.md`](docs/UPSTREAM_DIFFERENCES.md) for exactly how this
+> version differs (and how it relates to the Powell Lab's sibling `SNP_imputation_1000g_hg38`).
+> Citation details are in [`CITATION.cff`](CITATION.cff) and under [Attribution](#attribution) below.
 
 ## Inputs (from `genotyping`)
 
@@ -45,7 +46,11 @@ assign cells to donors in multiplexed 10x Chromium pools.
 
 ## Rule graphs
 
+### Plink QC
+
 ![QC rule graph](docs/qc_rulegraph.svg)
+
+### Imputation
 
 ![Imputation rule graph](docs/imputation_rulegraph.svg)
 
@@ -66,14 +71,14 @@ public version:
 | Het filter + ancestry-PCA plotting (R scripts) | `R` (`r-base`) | 4.3 |
 | Initial sample reheader | `bcftools` (biocontainer) | 1.21 |
 
-Versions are pinned to match the retired monolithic `.sif`, so the pipeline
-reproduces its ("golden") output — see `docs/UPSTREAM_DIFFERENCES.md`.
+Versions are pinned to those the upstream monolithic `.sif` shipped — see
+`docs/UPSTREAM_DIFFERENCES.md`.
 
 > **Containerised, with a conda fallback.** The former monolithic image
 > (`SNP_imputation_1000g_hg38.sif`) has been retired. **By default** every rule runs
 > from a pinned, public per-rule OCI image under
 > [`ghcr.io/swarbricklab`](https://github.com/orgs/swarbricklab/packages) (built with
-> absconda), selected via the `containers:` map in the config; run with
+> [absconda(https://github.com/swarbricklab/absconda)), selected via the `containers:` map in the config; run with
 > `--use-singularity` (the bundled `nci` profile already does). GenotypeHarmonizer and
 > Minimac4 (no bioconda package) are baked into their images; the reheader step uses
 > the public `quay.io/biocontainers/bcftools:1.21` image.
@@ -96,9 +101,6 @@ access to any private registry:
 - `resources/liftover/GRCh37_to_GRCh38.chain.gz` — Ensembl GRCh37→GRCh38 liftover chain
 - `resources/genomes/chr_map/`, `resources/genomes/GRCh38_chr.fai` — small, git-tracked
 
-(GenotypeHarmonizer and Minimac4 are no longer provisioned as reference data —
-they ship inside the per-rule container images.)
-
 Fetch, then extract into the paths the config/rules expect:
 
 ```bash
@@ -114,11 +116,11 @@ dvc update resources/eQTLGenImpRef.tar.gz.dvc resources/1000G.tar.gz.dvc \
 
 ## Attribution
 
-Adapted from the Powell Lab / sceQTL-Gen consortium imputation pipeline
-([powellgenomicslab/SNP_imputation_1000g_hg38](https://github.com/powellgenomicslab/SNP_imputation_1000g_hg38)),
-itself developed for the sceQTL-Gen WG1 pipeline — see
-[`docs/UPSTREAM_DIFFERENCES.md`](docs/UPSTREAM_DIFFERENCES.md) for the differences.
-If you use this workflow, please cite:
+Adapted from the sc-eQTLGen consortium **WG1 genotype-QC + imputation pipeline**
+([sc-eQTLgen-consortium/WG1-pipeline-QC](https://github.com/sc-eQTLgen-consortium/WG1-pipeline-QC);
+Powell Lab / Garvan) — see [`docs/UPSTREAM_DIFFERENCES.md`](docs/UPSTREAM_DIFFERENCES.md) for
+the differences, including how it relates to the Powell Lab's sibling pipeline
+`powellgenomicslab/SNP_imputation_1000g_hg38`. If you use this workflow, please cite:
 
 - van der Wijst *et al.* (2020), *eLife* — the sceQTL-Gen / single-cell eQTL
   reference approach.
@@ -152,9 +154,8 @@ git submodule update --init --recursive
 ## Status
 
 Public, citable (`CITATION.cff`), and reproducible from public inputs — ready for the
-**v1.0.0** release. The workflow reproduces the retired monolithic `.sif` ("golden")
-output byte-for-byte except for cosmetic header timestamps and record/sample ordering
-(`docs/UPSTREAM_DIFFERENCES.md` §3). Deliberate divergences from the upstream
+**v1.0.0** release. Runs are deterministic: reruns from identical inputs are byte-identical.
+Deliberate divergences from the upstream
 sc-eQTLGen pipeline are documented in `docs/UPSTREAM_DIFFERENCES.md`; planned
 post-1.0 improvements are tracked in the
 [issue tracker](https://github.com/swarbricklab/imputation/issues).
