@@ -120,10 +120,18 @@ Adapted from the sc-eQTLGen consortium **WG1 genotype-QC + imputation pipeline**
 ([sc-eQTLgen-consortium/WG1-pipeline-QC](https://github.com/sc-eQTLgen-consortium/WG1-pipeline-QC);
 Powell Lab / Garvan) — see [`docs/UPSTREAM_DIFFERENCES.md`](docs/UPSTREAM_DIFFERENCES.md) for
 the differences, including how it relates to the Powell Lab's sibling pipeline
-`powellgenomicslab/SNP_imputation_1000g_hg38`. If you use this workflow, please cite:
+`powellgenomicslab/SNP_imputation_1000g_hg38`. Reuse of the WG1 pipeline under the MIT
+licence with attribution was confirmed with the sc-eQTLGen WG1 authors.
 
-- van der Wijst *et al.* (2020), *eLife* — the sceQTL-Gen / single-cell eQTL
-  reference approach.
+**If you use this workflow — including in any publication arising from it — please cite the
+sc-eQTLGen sources, as requested by the WG1 authors:**
+
+- Kaptijn *et al.* (2026), *bioRxiv* — the main sc-eQTLGen consortium paper,
+  "Federated single-cell QTL meta-analysis reveals novel disease mechanisms"
+  ([doi:10.64898/2026.01.20.700519](https://doi.org/10.64898/2026.01.20.700519)).
+- van der Wijst *et al.* (2020), *eLife* — the single-cell eQTLGen consortium.
+- The sc-eQTLGen consortium **WG1 genotype-QC + imputation pipeline** (the upstream source
+  this workflow is adapted from; linked above).
 - Neavin *et al.* (2024), *Genome Biology* — **Demuxafy**, the downstream
   demultiplexing framework these SNP profiles feed.
 - The reference panels and tools above per their own citation requirements

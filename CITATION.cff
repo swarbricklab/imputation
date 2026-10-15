@@ -92,3 +92,16 @@ references:
     volume: 9
     doi: "10.7554/eLife.52155"
     notes: "sceQTL-Gen consortium; origin of the upstream imputation approach."
+  - type: article
+    title: "Federated single-cell QTL meta-analysis reveals novel disease mechanisms"
+    authors:
+      - given-names: Daniel
+        family-names: Kaptijn
+      - name: "the sc-eQTLGen consortium"
+    year: 2026
+    journal: "bioRxiv"
+    doi: "10.64898/2026.01.20.700519"
+    notes: >-
+      The main sc-eQTLGen consortium paper (bioRxiv preprint). The WG1 pipeline authors
+      (D. Neavin, A. Senabouth, J. Powell) asked that this be cited alongside the WG1
+      pipeline in any work using this adapted workflow.
