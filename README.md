@@ -7,13 +7,13 @@ them for single-cell demultiplexing by quality-controlling the calls and
 
 It contains two workflows that run in sequence:
 
-1. **QC** (`Snakefile_qc`, `rules/qc.smk`) — filters SNPs, and checks reported
-   sex and assigns ancestry by comparison against a 1000 Genomes reference.
-2. **Imputation** (`Snakefile_imputation`, `rules/imputation.smk`,
-   `rules/postimputation.smk`) — lifts the genotypes to GRCh38, harmonises and
-   fixes reference alleles, phases, imputes missing variants against a 1000
-   Genomes reference panel, and filters the result (MAF, imputation R², exonic
-   regions) to produce SNP profiles.
+1. **QC** (`Snakefile_qc`, `rules/qc.smk`) — filters samples (missingness,
+   relatedness), checks reported sex, and assigns ancestry by comparison against
+   a 1000 Genomes reference.
+2. **Imputation** (`Snakefile_imputation`, `rules/imputation.smk`) — lifts the
+   genotypes to GRCh38, harmonises and fixes reference alleles, phases, imputes
+   missing variants against a 1000 Genomes reference panel, and filters the
+   result (MAF, imputation R², exonic regions) to produce SNP profiles.
 
 These are the second and third stages of the SNP-based demultiplexing pipeline:
 
@@ -34,7 +34,7 @@ assign cells to donors in multiplexed 10x Chromium pools.
 
 ## Inputs (from `genotyping`)
 
-- **VCF** — genotype calls for all samples (hg19 for QC, hg38 for imputation)
+- **VCF** — genotype calls for all samples (hg19 for QC; hg38 for imputation, used only for chrX/chrY)
 - **psam** — a sample description file for `plink`
 - **id map** — maps original sample ids to the `plink`-safe ids in the `.psam`
 
@@ -120,8 +120,9 @@ Adapted from the sc-eQTLGen consortium **WG1 genotype-QC + imputation pipeline**
 ([sc-eQTLgen-consortium/WG1-pipeline-QC](https://github.com/sc-eQTLgen-consortium/WG1-pipeline-QC);
 Powell Lab / Garvan) — see [`docs/UPSTREAM_DIFFERENCES.md`](docs/UPSTREAM_DIFFERENCES.md) for
 the differences, including how it relates to the Powell Lab's sibling pipeline
-`powellgenomicslab/SNP_imputation_1000g_hg38`. Reuse of the WG1 pipeline under the MIT
-licence with attribution was confirmed with the sc-eQTLGen WG1 authors.
+`powellgenomicslab/SNP_imputation_1000g_hg38`. The sc-eQTLGen WG1 authors (Powell Lab) have
+said they are happy for this adapted workflow to be released under the MIT licence with
+attribution.
 
 **If you use this workflow — including in any publication arising from it — please cite the
 sc-eQTLGen sources, as requested by the WG1 authors:**
