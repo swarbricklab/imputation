@@ -120,8 +120,10 @@ Adapted from the sc-eQTLGen consortium **WG1 genotype-QC + imputation pipeline**
 ([sc-eQTLgen-consortium/WG1-pipeline-QC](https://github.com/sc-eQTLgen-consortium/WG1-pipeline-QC);
 Powell Lab / Garvan) — see [`docs/UPSTREAM_DIFFERENCES.md`](docs/UPSTREAM_DIFFERENCES.md) for
 the differences, including how it relates to the Powell Lab's sibling pipeline
-`powellgenomicslab/SNP_imputation_1000g_hg38`. Reuse of the WG1 pipeline under the MIT
-licence with attribution was confirmed with the sc-eQTLGen WG1 authors.
+`powellgenomicslab/SNP_imputation_1000g_hg38`. The sc-eQTLGen WG1 authors (Powell Lab) have
+said they are happy for this adapted workflow to be released under the MIT licence with
+attribution, and that — since the upstream pipeline is already public — no further sc-eQTLGen
+consortium approval is necessary.
 
 **If you use this workflow — including in any publication arising from it — please cite the
 sc-eQTLGen sources, as requested by the WG1 authors:**
