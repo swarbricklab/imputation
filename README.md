@@ -1,5 +1,7 @@
 # imputation
 
+[![DOI](https://zenodo.org/badge/882188659.svg)](https://doi.org/10.5281/zenodo.23405367)
+
 A Snakemake workflow that takes **measured genotypes** (a VCF, e.g. from the
 [genotyping](https://github.com/swarbricklab/genotyping) workflow) and prepares
 them for single-cell demultiplexing by quality-controlling the calls and
