@@ -6,6 +6,10 @@ cff-version: 1.2.0
 message: "If you use this workflow, please cite it using the metadata below."
 version: "1.0.0"
 date-released: "2026-10-16"
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.23405367"
+    description: "Concept DOI (resolves to the latest version)"
 title: "imputation: a genotype QC and 1000 Genomes imputation Snakemake workflow"
 abstract: >-
   A Snakemake workflow that takes measured genotypes (VCF) and performs quality
