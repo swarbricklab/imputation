@@ -1,0 +1,64 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+description: >-
+  imputation imputation-stage configuration (Snakefile_imputation). Validated at
+  workflow start via snakemake.utils.validate().
+type: object
+properties:
+  containers:
+    type: object
+    properties:
+      plink: {type: string}
+      crossmap: {type: string}
+      bcftools: {type: string}
+      het: {type: string}
+      vcftools: {type: string}
+      eagle: {type: string}
+      r: {type: string}
+      plink_bcftools: {type: string}
+      genotypeharmonizer: {type: string}
+      minimac4: {type: string}
+      bcftools_biocontainer: {type: string}
+    required: [plink, crossmap, bcftools, het, vcftools, eagle, r, plink_bcftools, genotypeharmonizer, minimac4, bcftools_biocontainer]
+  deps:
+    type: object
+    properties:
+      input_vcf: {type: string}
+      post_qc_plink: {type: string}
+      id_map: {type: string}
+    required: [input_vcf, post_qc_plink, id_map]
+    additionalProperties: false
+  outs:
+    type: object
+    properties:
+      results: {type: string}
+      logs: {type: string}
+    required: [results, logs]
+    additionalProperties: false
+  refs:
+    type: object
+    properties:
+      vcf: {type: string}
+      hg38_int_fa: {type: string}
+      hg38_chr_fai: {type: string}
+      genetic_map: {type: string}
+      phasing: {type: string}
+      impute: {type: string}
+      bed: {type: string}
+      int2chr: {type: string}
+      chr2int: {type: string}
+      chain: {type: string}
+    required: [vcf, hg38_int_fa, hg38_chr_fai, genetic_map, phasing, impute, bed, int2chr, chr2int, chain]
+    additionalProperties: false
+  params:
+    type: object
+    properties:
+      snp_missing_pct: {type: number}
+      snp_hwe: {type: number}
+      chunk_length: {type: integer}
+      pre_maf: {type: number}
+      post_maf: {type: number}
+      post_r2: {type: number}
+      impute_format: {type: string}
+      het_remove_outliers: {type: boolean}
+    required: [snp_missing_pct, snp_hwe, chunk_length, pre_maf, post_maf, post_r2, impute_format]
+required: [containers, deps, outs, refs, params]

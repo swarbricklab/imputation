@@ -1,0 +1,64 @@
+name: CI
+
+# Lightweight, data-independent checks on GitHub-hosted runners (and forks). They
+# need no real VCFs / reference panels / maps, so they run on every push/PR. Both
+# stages (QC + imputation) are dry-run-checked. Real end-to-end testing needs the
+# DVC-tracked panels + the pinned containers, done elsewhere.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4
+        # profiles/global (NCI) is a submodule and is not used here: both dry-runs
+        # run without a profile (imputation uses --default-resources instead).
+
+      - uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-name: ci
+          # snakefmt + go-shfmt pinned so the format check is reproducible
+          # (snakefmt formats shell: blocks via shfmt, so both must match).
+          create-args: >-
+            snakemake=7.32.4
+            snakefmt=2.1.0
+            go-shfmt=3.14.1
+            pandas
+            jsonschema
+          condarc: |
+            channels:
+              - conda-forge
+              - bioconda
+
+      - name: Touch placeholder inputs
+        run: bash .tests/ci/setup_placeholders.sh
+
+      - name: Dry-run QC (builds the DAG + validates config against the schema)
+        run: >-
+          snakemake -n
+          --snakefile workflow/Snakefile_qc
+          --configfile config/test_qc.yaml
+
+      # The imputation shells use {resources.java_mem}/{resources.threads}
+      # (normally from the cluster profile); supply local defaults for the dry-run.
+      - name: Dry-run imputation (builds the DAG + validates config against the schema)
+        run: >-
+          snakemake -n
+          --snakefile workflow/Snakefile_imputation
+          --configfile config/test_imputation.yaml
+          --default-resources java_mem=25 threads=1
+
+      - name: snakefmt check
+        run: snakefmt --check workflow/
+
+      - name: snakemake lint (informational)
+        continue-on-error: true
+        run: |
+          snakemake --lint --snakefile workflow/Snakefile_qc --configfile config/test_qc.yaml
+          snakemake --lint --snakefile workflow/Snakefile_imputation --configfile config/test_imputation.yaml --default-resources java_mem=25 threads=1

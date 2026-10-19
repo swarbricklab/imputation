@@ -1,6 +1,11 @@
 # imputation
 
 [![DOI](https://zenodo.org/badge/882188659.svg)](https://doi.org/10.5281/zenodo.23405367)
+[![CI](https://github.com/swarbricklab/imputation/actions/workflows/ci.yml/badge.svg)](https://github.com/swarbricklab/imputation/actions/workflows/ci.yml)
+[![Snakemake](https://img.shields.io/badge/snakemake-%E2%89%A57.32.4-brightgreen.svg)](https://snakemake.github.io)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Code style: snakefmt](https://img.shields.io/badge/code%20style-snakefmt-000000.svg)](https://github.com/snakemake/snakefmt)
+[![WorkflowHub](https://img.shields.io/badge/WorkflowHub-2342-14b8a6.svg)](https://workflowhub.eu/workflows/2342)
 
 A Snakemake workflow that takes **measured genotypes** (a VCF, e.g. from the
 [genotyping](https://github.com/swarbricklab/genotyping) workflow) and prepares

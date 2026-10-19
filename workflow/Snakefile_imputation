@@ -1,20 +1,52 @@
 from pathlib import Path
 import pandas as pd
+from snakemake.utils import min_version, validate
+
+min_version("7.32.4")
+
+# Fail fast with a clear message if the config is missing/misnamed keys, rather
+# than deep inside a rule. Schema in workflow/schemas/config_imputation.schema.yaml.
+validate(config, "schemas/config_imputation.schema.yaml")
 
 # Global paths
-post_qc_plink=Path(config['deps']['post_qc_plink'])
-out_dir = Path(config['outs']['results'])
-logs = Path(config['outs']['logs'])
-imputation=out_dir
+post_qc_plink = Path(config["deps"]["post_qc_plink"])
+out_dir = Path(config["outs"]["results"])
+logs = Path(config["outs"]["logs"])
+imputation = out_dir
 
-chromosomes=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22]
+chromosomes = [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+]
 
-psam=pd.read_csv(post_qc_plink/"post_qc.psam", sep='\t', dtype=str)
-ancestry_subsets=psam['Provided_Ancestry'].unique().tolist()
+psam = pd.read_csv(post_qc_plink / "post_qc.psam", sep="\t", dtype=str)
+ancestry_subsets = psam["Provided_Ancestry"].unique().tolist()
+
 
 include: "rules/common.smk"
 include: "rules/imputation.smk"
 
+
 rule all:
     input:
-        final=out_dir/"imputed_filtered.hg38.vcf.gz"
+        final=out_dir / "imputed_filtered.hg38.vcf.gz",

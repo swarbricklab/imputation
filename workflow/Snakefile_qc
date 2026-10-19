@@ -1,18 +1,26 @@
 from pathlib import Path
 import pandas as pd
+from snakemake.utils import min_version, validate
+
+min_version("7.32.4")
+
+# Fail fast with a clear message if the config is missing/misnamed keys, rather
+# than deep inside a rule. Schema in workflow/schemas/config_qc.schema.yaml.
+validate(config, "schemas/config_qc.schema.yaml")
 
 # Global paths
-out_dir = Path(config['outs']['post_qc_plink']).parent
-logs = Path(config['outs']['logs'])
-final = Path(config['outs']['post_qc_plink'])
+out_dir = Path(config["outs"]["post_qc_plink"]).parent
+logs = Path(config["outs"]["logs"])
+final = Path(config["outs"]["post_qc_plink"])
 metadata_csv = out_dir / "derived_sample_metadata.csv"
+
 
 include: "rules/common.smk"
 include: "rules/qc.smk"
 
+
 rule all:
     input:
-        post_qc_plink=final/"post_qc.psam",
+        post_qc_plink=final / "post_qc.psam",
         metadata=metadata_csv,
-        kin0=out_dir/"relatedness/relatedness_check.kin0"
-
+        kin0=out_dir / "relatedness/relatedness_check.kin0",
