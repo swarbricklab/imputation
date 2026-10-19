@@ -1,0 +1,56 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+description: >-
+  imputation QC-stage configuration (Snakefile_qc). Validated at workflow start
+  via snakemake.utils.validate().
+type: object
+properties:
+  containers:
+    type: object
+    properties:
+      plink: {type: string}
+      crossmap: {type: string}
+      bcftools: {type: string}
+      het: {type: string}
+      vcftools: {type: string}
+      eagle: {type: string}
+      r: {type: string}
+      plink_bcftools: {type: string}
+      genotypeharmonizer: {type: string}
+      minimac4: {type: string}
+      bcftools_biocontainer: {type: string}
+    required: [plink, crossmap, bcftools, het, vcftools, eagle, r, plink_bcftools, genotypeharmonizer, minimac4, bcftools_biocontainer]
+  deps:
+    type: object
+    properties:
+      input_vcf: {type: string}
+      input_psam: {type: string}
+      id_map: {type: string}
+    required: [input_vcf, input_psam, id_map]
+    additionalProperties: false
+  outs:
+    type: object
+    properties:
+      post_qc_plink: {type: string}
+      logs: {type: string}
+    required: [post_qc_plink, logs]
+    additionalProperties: false
+  refs:
+    type: object
+    properties:
+      1000g:
+        type: object
+        properties:
+          pgen: {type: string}
+          pvar: {type: string}
+          psam: {type: string}
+        required: [pgen, pvar, psam]
+    required: [1000g]
+  params:
+    type: object
+    properties:
+      indiv_missingness_mind: {type: number}
+      king_cutoff: {type: number}
+      king_table_cutoff: {type: number}
+      ld_prune: {type: string}
+    required: [indiv_missingness_mind, king_cutoff, king_table_cutoff, ld_prune]
+required: [containers, deps, outs, refs, params]

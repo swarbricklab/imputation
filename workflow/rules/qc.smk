@@ -5,33 +5,34 @@ import pandas as pd
 
 rule reheader_vcf:
     input:
-        vcf=config['deps']['input_vcf'],
-        id_map=config['deps']['id_map']
+        vcf=config["deps"]["input_vcf"],
+        id_map=config["deps"]["id_map"],
     output:
-        vcf=temp(out_dir/"vcf/reheader.hg19.vcf")
+        vcf=temp(out_dir / "vcf/reheader.hg19.vcf"),
     log:
-        logs/"vcf_reheader.log"
+        logs / "vcf_reheader.log",
     container:
-        config['containers']['bcftools_biocontainer']
+        config["containers"]["bcftools_biocontainer"]
     shell:
         """
-        bcftools reheader -s {input.id_map} {input.vcf} -o {output.vcf} > {log} 2>&1
+        bcftools reheader -s {input.id_map} {input.vcf} -o {output.vcf} >{log} 2>&1
         """
+
 
 rule run_plink:
     input:
-        psam=config['deps']['input_psam'],
-        vcf=rules.reheader_vcf.output.vcf
+        psam=config["deps"]["input_psam"],
+        vcf=rules.reheader_vcf.output.vcf,
     output:
-        psam=temp(out_dir/"plink/plink.psam"),
-        pgen=temp(out_dir/"plink/plink.pgen"),
-        pvar=temp(out_dir/"plink/plink.pvar")
-    params:
-        out_pfx=lambda w, output: pfx(output.pgen, ".pgen")
+        psam=temp(out_dir / "plink/plink.psam"),
+        pgen=temp(out_dir / "plink/plink.pgen"),
+        pvar=temp(out_dir / "plink/plink.pvar"),
     log:
-        logs/"plink/run_plink.log"
+        logs / "plink/run_plink.log",
     container:
-        config['containers']['plink']
+        config["containers"]["plink"]
+    params:
+        out_pfx=lambda w, output: pfx(output.pgen, ".pgen"),
     # conda:
     #     "../envs/plink.yaml"
     shell:
@@ -45,20 +46,21 @@ rule run_plink:
         mv {params.out_pfx}.log {log}
         """
 
+
 rule calculate_missingness:
     input:
         psam=rules.run_plink.output.psam,
         pgen=rules.run_plink.output.pgen,
-        pvar=rules.run_plink.output.pvar
+        pvar=rules.run_plink.output.pvar,
     output:
-        smiss=temp(out_dir/"indiv_missingness/sample_missingness.smiss")
+        smiss=temp(out_dir / "indiv_missingness/sample_missingness.smiss"),
+    log:
+        logs / "plink/calculate_missingness.log",
+    container:
+        config["containers"]["plink"]
     params:
         in_pfx=lambda w, input: pfx(input.pgen, ".pgen"),
-        out_pfx=lambda w, output: pfx(output.smiss, ".smiss")
-    log:
-        logs/"plink/calculate_missingness.log"
-    container:
-        config['containers']['plink']
+        out_pfx=lambda w, output: pfx(output.smiss, ".smiss"),
     # conda:
     #     "../envs/plink.yaml"
     shell:
@@ -70,24 +72,25 @@ rule calculate_missingness:
         mv {params.out_pfx}.log {log}
         """
 
+
 rule indiv_missingness:
     input:
         psam=rules.run_plink.output.psam,
         pgen=rules.run_plink.output.pgen,
         pvar=rules.run_plink.output.pvar,
-        smiss=rules.calculate_missingness.output.smiss
+        smiss=rules.calculate_missingness.output.smiss,
     output:
-        pgen=out_dir/"indiv_missingness/indiv_missingness.pgen",
-        pvar=out_dir/"indiv_missingness/indiv_missingness.pvar",
-        psam=out_dir/"indiv_missingness/indiv_missingness.psam"
-    params:
-        mind = config["params"]["indiv_missingness_mind"],
-        in_pfx=lambda w, input: pfx(input.pgen, ".pgen"),
-        out_pfx=lambda w, output: pfx(output.pgen, ".pgen")
+        pgen=out_dir / "indiv_missingness/indiv_missingness.pgen",
+        pvar=out_dir / "indiv_missingness/indiv_missingness.pvar",
+        psam=out_dir / "indiv_missingness/indiv_missingness.psam",
     log:
-        logs/"plink/indiv_missingness.log"
+        logs / "plink/indiv_missingness.log",
     container:
-        config['containers']['plink']
+        config["containers"]["plink"]
+    params:
+        mind=config["params"]["indiv_missingness_mind"],
+        in_pfx=lambda w, input: pfx(input.pgen, ".pgen"),
+        out_pfx=lambda w, output: pfx(output.pgen, ".pgen"),
     # conda:
     #     "../envs/plink.yaml"
     shell:
@@ -100,26 +103,27 @@ rule indiv_missingness:
         mv {params.out_pfx}.log {log}
         """
 
+
 rule check_sex:
     input:
         pgen=rules.indiv_missingness.output.pgen,
         pvar=rules.indiv_missingness.output.pvar,
-        psam=rules.indiv_missingness.output.psam
+        psam=rules.indiv_missingness.output.psam,
     output:
-        bed=temp(out_dir/"check_sex/check_sex.bed"),
-        bim=temp(out_dir/"check_sex/check_sex.bim"),
-        fam=temp(out_dir/"check_sex/check_sex.fam"),
-        sexcheck=temp(out_dir/"check_sex/check_sex.sexcheck"),
-        sexcheck_tsv=temp(out_dir/"check_sex/check_sex.sexcheck.tsv"),
-        hh=temp(out_dir/"check_sex/check_sex.hh"),
-        no=temp(out_dir/"check_sex/check_sex.nosex")
+        bed=temp(out_dir / "check_sex/check_sex.bed"),
+        bim=temp(out_dir / "check_sex/check_sex.bim"),
+        fam=temp(out_dir / "check_sex/check_sex.fam"),
+        sexcheck=temp(out_dir / "check_sex/check_sex.sexcheck"),
+        sexcheck_tsv=temp(out_dir / "check_sex/check_sex.sexcheck.tsv"),
+        hh=temp(out_dir / "check_sex/check_sex.hh"),
+        no=temp(out_dir / "check_sex/check_sex.nosex"),
+    log:
+        logs / "plink/check_sex.log",
+    container:
+        config["containers"]["plink"]
     params:
         in_pfx=lambda w, input: pfx(input.pgen, ".pgen"),
-        out_pfx=lambda w, output: pfx(output.bed, ".bed")
-    log:
-        logs/"plink/check_sex.log"
-    container:
-        config['containers']['plink']
+        out_pfx=lambda w, output: pfx(output.bed, ".bed"),
     # conda:
     #     "../envs/plink.yaml"
     shell:
@@ -136,68 +140,71 @@ rule check_sex:
             --check-sex \
             --biallelic-only strict \
             --out {params.out_pfx}
-        cat {params.out_pfx}.log >> {log}
+        cat {params.out_pfx}.log >>{log}
         rm {params.out_pfx}.log
 
-        awk '{{$1=$1}}1' OFS="\t" {output.sexcheck} > {output.sexcheck_tsv}
+        awk '{{$1=$1}}1' OFS="\t" {output.sexcheck} >{output.sexcheck_tsv}
         touch {output.no}
         """
 
+
 rule find_common_snps:
     input:
-        pvar=out_dir/"indiv_missingness/indiv_missingness.pvar",
-        pvar_1000g=config['refs']['1000g']['pvar']
+        pvar=out_dir / "indiv_missingness/indiv_missingness.pvar",
+        pvar_1000g=config["refs"]["1000g"]["pvar"],
     output:
-        snps_data=temp(out_dir/"common_snps/snps_data.tsv"),
-        snps_1000g=temp(out_dir/"common_snps/snps_1000g.tsv")
+        snps_data=temp(out_dir / "common_snps/snps_data.tsv"),
+        snps_1000g=temp(out_dir / "common_snps/snps_1000g.tsv"),
     log:
-        logs/"find_common_snps.log"
+        logs / "find_common_snps.log",
     shell:
         """
-        exec > {log} 2>&1
+        exec >{log} 2>&1
         # Find the intersection of SNPs from both pvar files using awk
-        awk 'NR==FNR{{a[$1,$2,$4,$5];next}} ($1,$2,$4,$5) in a{{print $3}}' {input.pvar} {input.pvar_1000g} > {output.snps_1000g}
-        awk 'NR==FNR{{a[$1,$2,$4,$5];next}} ($1,$2,$4,$5) in a{{print $3}}' {input.pvar_1000g} {input.pvar} > {output.snps_data}
+        awk 'NR==FNR{{a[$1,$2,$4,$5];next}} ($1,$2,$4,$5) in a{{print $3}}' {input.pvar} {input.pvar_1000g} >{output.snps_1000g}
+        awk 'NR==FNR{{a[$1,$2,$4,$5];next}} ($1,$2,$4,$5) in a{{print $3}}' {input.pvar_1000g} {input.pvar} >{output.snps_data}
         """
+
 
 rule extract_common_snps:
     input:
         pgen=rules.indiv_missingness.output.pgen,
         pvar=rules.indiv_missingness.output.pvar,
         psam=rules.indiv_missingness.output.psam,
-        pgen_1000g=config['refs']['1000g']['pgen'],
-        pvar_1000g=config['refs']['1000g']['pvar'],
-        psam_1000g=config['refs']['1000g']['psam'],
-        snps_data=out_dir/"common_snps/snps_data.tsv",
-        snps_1000g=out_dir/"common_snps/snps_1000g.tsv"
+        pgen_1000g=config["refs"]["1000g"]["pgen"],
+        pvar_1000g=config["refs"]["1000g"]["pvar"],
+        psam_1000g=config["refs"]["1000g"]["psam"],
+        snps_data=out_dir / "common_snps/snps_data.tsv",
+        snps_1000g=out_dir / "common_snps/snps_1000g.tsv",
     output:
-        pgen=temp(out_dir/"common_snps/subset_data.pgen"),
-        pvar=temp(out_dir/"common_snps/subset_data.pvar"),
-        psam=temp(out_dir/"common_snps/subset_data.psam"),
-        pgen_1000g=temp(out_dir/"common_snps/subset_1000g.pgen"),
-        pvar_1000g=temp(out_dir/"common_snps/subset_1000g.pvar"),
-        psam_1000g=temp(out_dir/"common_snps/subset_1000g.psam")
+        pgen=temp(out_dir / "common_snps/subset_data.pgen"),
+        pvar=temp(out_dir / "common_snps/subset_data.pvar"),
+        psam=temp(out_dir / "common_snps/subset_data.psam"),
+        pgen_1000g=temp(out_dir / "common_snps/subset_1000g.pgen"),
+        pvar_1000g=temp(out_dir / "common_snps/subset_1000g.pvar"),
+        psam_1000g=temp(out_dir / "common_snps/subset_1000g.psam"),
+    log:
+        logs / "plink/extract_common_snps.log",
+    container:
+        config["containers"]["plink"]
     params:
         in_pfx=lambda w, input: pfx(input.pgen, ".pgen"),
         out_pfx=lambda w, output: pfx(output.pgen, ".pgen"),
         in_pfx_1000g=lambda w, input: pfx(input.pgen_1000g, ".pgen"),
-        out_pfx_1000g=lambda w, output: pfx(output.pgen_1000g, ".pgen")
-    log:
-        logs/"plink/extract_common_snps.log"
-    container:
-        config['containers']['plink']
+        out_pfx_1000g=lambda w, output: pfx(output.pgen_1000g, ".pgen"),
     # conda:
     #     "../envs/plink.yaml"
     shell:
         """
-        exec > {log} 2>&1
+        exec >{log} 2>&1
 
         cmd="plink2 --threads {threads} \
             --pfile {params.in_pfx} \
             --extract {input.snps_data} \
             --make-pgen 'psam-cols='fid,parents,sex,phenos \
             --out {params.out_pfx}"
-        echo $cmd; eval $cmd
+        echo $cmd
+        eval $cmd
         rm {params.out_pfx}.log
 
         cmd="plink2 --threads {threads} \
@@ -205,47 +212,49 @@ rule extract_common_snps:
             --extract {input.snps_1000g} \
             --make-pgen \
             --out {params.out_pfx_1000g}"
-        echo $cmd; eval $cmd
+        echo $cmd
+        eval $cmd
         rm {params.out_pfx_1000g}.log
         """
 
+
 rule prune_1000g:
     input:
-        bed_1000g=out_dir/"common_snps/subset_1000g.pgen",
-        bim_1000g=out_dir/"common_snps/subset_1000g.pvar",
-        fam_1000g=out_dir/"common_snps/subset_1000g.psam",
-        bim=out_dir/"common_snps/subset_data.pvar",
-        bed=out_dir/"common_snps/subset_data.pgen",
-        fam=out_dir/"common_snps/subset_data.psam"
+        bed_1000g=out_dir / "common_snps/subset_1000g.pgen",
+        bim_1000g=out_dir / "common_snps/subset_1000g.pvar",
+        fam_1000g=out_dir / "common_snps/subset_1000g.psam",
+        bim=out_dir / "common_snps/subset_data.pvar",
+        bed=out_dir / "common_snps/subset_data.pgen",
+        fam=out_dir / "common_snps/subset_data.psam",
     output:
-        prune_in_1000t=temp(out_dir/"common_snps/subset_pruned_1000g.prune.in"),
-        prune_out_1000g=temp(out_dir/"common_snps/subset_pruned_1000g.prune.out"),
-        prune_out=temp(out_dir/"common_snps/subset_data.prune.out"),
-        bed_1000g=temp(out_dir/"common_snps/subset_pruned_1000g.pgen"),
-        bim_1000g=temp(out_dir/"common_snps/subset_pruned_1000g.pvar"),
-        fam_1000g=temp(out_dir/"common_snps/subset_pruned_1000g.psam"),
-        bed=temp(out_dir/"common_snps/subset_pruned_data.pgen"),
-        bim=temp(out_dir/"common_snps/subset_pruned_data.pvar"),
-        bim_temp=temp(out_dir/"common_snps/subset_pruned_data_temp.pvar"),
-        bim_old=temp(out_dir/"common_snps/subset_pruned_data_original.pvar"),
-        fam=temp(out_dir/"common_snps/subset_pruned_data.psam"),
-        data_1000g_key=temp(out_dir/"common_snps/subset_pruned_data_1000g_key.txt"),
-        SNPs2keep=temp(out_dir/"common_snps/SNPs2keep.txt")
+        prune_in_1000t=temp(out_dir / "common_snps/subset_pruned_1000g.prune.in"),
+        prune_out_1000g=temp(out_dir / "common_snps/subset_pruned_1000g.prune.out"),
+        prune_out=temp(out_dir / "common_snps/subset_data.prune.out"),
+        bed_1000g=temp(out_dir / "common_snps/subset_pruned_1000g.pgen"),
+        bim_1000g=temp(out_dir / "common_snps/subset_pruned_1000g.pvar"),
+        fam_1000g=temp(out_dir / "common_snps/subset_pruned_1000g.psam"),
+        bed=temp(out_dir / "common_snps/subset_pruned_data.pgen"),
+        bim=temp(out_dir / "common_snps/subset_pruned_data.pvar"),
+        bim_temp=temp(out_dir / "common_snps/subset_pruned_data_temp.pvar"),
+        bim_old=temp(out_dir / "common_snps/subset_pruned_data_original.pvar"),
+        fam=temp(out_dir / "common_snps/subset_pruned_data.psam"),
+        data_1000g_key=temp(out_dir / "common_snps/subset_pruned_data_1000g_key.txt"),
+        SNPs2keep=temp(out_dir / "common_snps/SNPs2keep.txt"),
+    log:
+        logs / "plink/prune_1000g.log",
+    container:
+        config["containers"]["plink"]
     params:
-        ld_prune=config['params']['ld_prune'],
+        ld_prune=config["params"]["ld_prune"],
         in_pfx_1000g=lambda w, input: pfx(input.bed_1000g, ".pgen"),
         out_pfx_1000g=lambda w, output: pfx(output.bed_1000g, ".pgen"),
         in_pfx=lambda w, input: pfx(input.bed, ".pgen"),
-        out_pfx=lambda w, output: pfx(output.bed, ".pgen")
-    log:
-        logs/"plink/prune_1000g.log"
-    container:
-        config['containers']['plink']
+        out_pfx=lambda w, output: pfx(output.bed, ".pgen"),
     # conda:
     #     "../envs/plink.yaml"
     shell:
         """
-        exec > {log} 2>&1
+        exec >{log} 2>&1
 
         plink2 --threads {threads} \
             --pfile {params.in_pfx_1000g} \
@@ -260,17 +269,16 @@ rule prune_1000g:
             --out {params.out_pfx_1000g}
         rm {params.out_pfx_1000g}.log
 
-        if [[ $(grep "##" {input.bim} | wc -l) > 0 ]]
-        then
-            grep "##" {input.bim} > {output.data_1000g_key}
+        if [[ $(grep "##" {input.bim} | wc -l) > 0 ]]; then
+            grep "##" {input.bim} >{output.data_1000g_key}
         fi
         awk -F"\\t" 'BEGIN{{OFS=FS = "\\t"}} \
             NR==FNR{{a[$1 FS $2 FS $4 FS $5] = $0; next}} \
             {{ind = $1 FS $2 FS $4 FS $5}} ind in a {{print a[ind], $3}}' {output.bim_1000g} {input.bim} \
-            | grep -v "##" >> {output.data_1000g_key}
+            | grep -v "##" >>{output.data_1000g_key}
         grep -v "##" {output.data_1000g_key} \
             | awk 'BEGIN{{FS=OFS="\t"}}{{print $NF}}' \
-            > {output.prune_out}
+                >{output.prune_out}
 
         plink2 --threads {threads} \
             --pfile {params.in_pfx} \
@@ -282,30 +290,31 @@ rule prune_1000g:
         cp {output.bim} {output.bim_old}
         grep -v "#" {output.bim_old} \
             | awk 'BEGIN{{FS=OFS="\t"}}{{print($3)}}' \
-            > {output.SNPs2keep}
-        grep "#CHROM" {output.data_1000g_key} > {output.bim}
-        grep -Ff {output.SNPs2keep} {output.data_1000g_key} >> {output.bim}
-        awk 'BEGIN{{FS=OFS="\t"}}NF{{NF-=1}};1' < {output.bim} > {output.bim_temp}
-        grep "##" {output.bim_1000g} > {output.bim}
-        cat {output.bim_temp} >> {output.bim}
+                >{output.SNPs2keep}
+        grep "#CHROM" {output.data_1000g_key} >{output.bim}
+        grep -Ff {output.SNPs2keep} {output.data_1000g_key} >>{output.bim}
+        awk 'BEGIN{{FS=OFS="\t"}}NF{{NF-=1}};1' <{output.bim} >{output.bim_temp}
+        grep "##" {output.bim_1000g} >{output.bim}
+        cat {output.bim_temp} >>{output.bim}
         """
 
-rule final_pruning: ### put in contingency for duplicated snps - remove from both 1000G and your dataset
+
+rule final_pruning:  ### put in contingency for duplicated snps - remove from both 1000G and your dataset
     input:
-        bed=out_dir/"common_snps/subset_pruned_data.pgen",
-        bim=out_dir/"common_snps/subset_pruned_data.pvar",
-        fam=out_dir/"common_snps/subset_pruned_data.psam"
+        bed=out_dir / "common_snps/subset_pruned_data.pgen",
+        bim=out_dir / "common_snps/subset_pruned_data.pvar",
+        fam=out_dir / "common_snps/subset_pruned_data.psam",
     output:
-        bed=temp(out_dir/"common_snps/final_subset_pruned_data.pgen"),
-        bim=temp(out_dir/"common_snps/final_subset_pruned_data.pvar"),
-        fam=temp(out_dir/"common_snps/final_subset_pruned_data.psam")
+        bed=temp(out_dir / "common_snps/final_subset_pruned_data.pgen"),
+        bim=temp(out_dir / "common_snps/final_subset_pruned_data.pvar"),
+        fam=temp(out_dir / "common_snps/final_subset_pruned_data.psam"),
+    log:
+        logs / "plink/final_pruning.log",
+    container:
+        config["containers"]["plink"]
     params:
         in_pfx=lambda w, input: pfx(input.bed, ".pgen"),
-        out_pfx=lambda w, output: pfx(output.bed, ".pgen")
-    log:
-        logs/"plink/final_pruning.log"
-    container:
-        config['containers']['plink']
+        out_pfx=lambda w, output: pfx(output.bed, ".pgen"),
     # conda:
     #     "../envs/plink.yaml"
     shell:
@@ -318,6 +327,7 @@ rule final_pruning: ### put in contingency for duplicated snps - remove from bot
         mv {params.out_pfx}.log {log}
         """
 
+
 # KING-robust kinship is ancestry-agnostic, so this runs on the pooled pruned
 # data to catch cross-ancestry duplicates and sample swaps. Two plink2 passes
 # are needed because --king-cutoff prunes samples before --make-king-table
@@ -329,20 +339,20 @@ rule relatedness_check:
     input:
         bed=rules.final_pruning.output.bed,
         bim=rules.final_pruning.output.bim,
-        fam=rules.final_pruning.output.fam
+        fam=rules.final_pruning.output.fam,
     output:
-        kin0=out_dir/"relatedness/relatedness_check.kin0",
-        remove_id=temp(out_dir/"relatedness/relatedness_check.king.cutoff.out.id"),
-        in_id=temp(out_dir/"relatedness/relatedness_check.king.cutoff.in.id")
+        kin0=out_dir / "relatedness/relatedness_check.kin0",
+        remove_id=temp(out_dir / "relatedness/relatedness_check.king.cutoff.out.id"),
+        in_id=temp(out_dir / "relatedness/relatedness_check.king.cutoff.in.id"),
+    log:
+        logs / "plink/relatedness_check.log",
+    container:
+        config["containers"]["plink"]
     params:
         king_cutoff=config["params"]["king_cutoff"],
         king_table_cutoff=config["params"]["king_table_cutoff"],
         in_pfx=lambda w, input: pfx(input.bed, ".pgen"),
-        out_pfx=lambda w, output: pfx(output.kin0, ".kin0")
-    log:
-        logs/"plink/relatedness_check.log"
-    container:
-        config['containers']['plink']
+        out_pfx=lambda w, output: pfx(output.kin0, ".kin0"),
     # conda:
     #     "../envs/plink.yaml"
     shell:
@@ -358,29 +368,30 @@ rule relatedness_check:
             --pfile {params.in_pfx} \
             --king-cutoff {params.king_cutoff} \
             --out {params.out_pfx}
-        cat {params.out_pfx}.log >> {log}
+        cat {params.out_pfx}.log >>{log}
         rm {params.out_pfx}.log
         """
+
 
 ### use PCA from plink for PCA and projection
 rule pca_1000g:
     input:
-        pgen_1000g=out_dir/"common_snps/subset_pruned_1000g.pgen",
-        pvar_1000g=out_dir/"common_snps/subset_pruned_1000g.pvar",
-        psam_1000g=out_dir/"common_snps/subset_pruned_1000g.psam",
-        bed=out_dir/"common_snps/subset_pruned_data.pgen"
+        pgen_1000g=out_dir / "common_snps/subset_pruned_1000g.pgen",
+        pvar_1000g=out_dir / "common_snps/subset_pruned_1000g.pvar",
+        psam_1000g=out_dir / "common_snps/subset_pruned_1000g.psam",
+        bed=out_dir / "common_snps/subset_pruned_data.pgen",
     output:
-        out=temp(out_dir/"pca_projection/subset_pruned_1000g_pcs.acount"),
-        eig_all=temp(out_dir/"pca_projection/subset_pruned_1000g_pcs.eigenvec.allele"),
-        eig_vec=temp(out_dir/"pca_projection/subset_pruned_1000g_pcs.eigenvec"),
-        eig=temp(out_dir/"pca_projection/subset_pruned_1000g_pcs.eigenval")
+        out=temp(out_dir / "pca_projection/subset_pruned_1000g_pcs.acount"),
+        eig_all=temp(out_dir / "pca_projection/subset_pruned_1000g_pcs.eigenvec.allele"),
+        eig_vec=temp(out_dir / "pca_projection/subset_pruned_1000g_pcs.eigenvec"),
+        eig=temp(out_dir / "pca_projection/subset_pruned_1000g_pcs.eigenval"),
+    log:
+        logs / "plink/pca_1000g.log",
+    container:
+        config["containers"]["plink"]
     params:
         in_pfx=lambda w, input: pfx(input.pgen_1000g, ".pgen"),
-        out_pfx=lambda w, output: pfx(output.eig, ".eigenval")
-    log:
-        logs/"plink/pca_1000g.log"
-    container:
-        config['containers']['plink']
+        out_pfx=lambda w, output: pfx(output.eig, ".eigenval"),
     # conda:
     #     "../envs/plink.yaml"
     shell:
@@ -393,29 +404,34 @@ rule pca_1000g:
         mv {params.out_pfx}.log {log}
         """
 
+
 ### use plink pca results to plot with R ###
 rule pca_project:
     input:
-        pgen=out_dir/"common_snps/final_subset_pruned_data.pgen",
-        pvar=out_dir/"common_snps/final_subset_pruned_data.pvar",
-        psam=out_dir/"common_snps/final_subset_pruned_data.psam",
-        pgen_1000g=out_dir/"common_snps/subset_pruned_1000g.pgen",
-        pvar_1000g=out_dir/"common_snps/subset_pruned_1000g.pvar",
-        psam_1000g=out_dir/"common_snps/subset_pruned_1000g.psam",
-        frq=out_dir/"pca_projection/subset_pruned_1000g_pcs.acount",
-        scores=out_dir/"pca_projection/subset_pruned_1000g_pcs.eigenvec.allele"
+        pgen=out_dir / "common_snps/final_subset_pruned_data.pgen",
+        pvar=out_dir / "common_snps/final_subset_pruned_data.pvar",
+        psam=out_dir / "common_snps/final_subset_pruned_data.psam",
+        pgen_1000g=out_dir / "common_snps/subset_pruned_1000g.pgen",
+        pvar_1000g=out_dir / "common_snps/subset_pruned_1000g.pvar",
+        psam_1000g=out_dir / "common_snps/subset_pruned_1000g.psam",
+        frq=out_dir / "pca_projection/subset_pruned_1000g_pcs.acount",
+        scores=out_dir / "pca_projection/subset_pruned_1000g_pcs.eigenvec.allele",
     output:
-        projected_scores=temp(out_dir/"pca_projection/final_subset_pruned_data_pcs.sscore"),
-        projected_1000g_scores=temp(out_dir/"pca_projection/subset_pruned_1000g_pcs_projected.sscore")
+        projected_scores=temp(
+            out_dir / "pca_projection/final_subset_pruned_data_pcs.sscore"
+        ),
+        projected_1000g_scores=temp(
+            out_dir / "pca_projection/subset_pruned_1000g_pcs_projected.sscore"
+        ),
+    log:
+        logs / "plink/pca_project.log",
+    container:
+        config["containers"]["plink"]
     params:
         in_pfx=lambda w, input: pfx(input.pgen, ".pgen"),
         out_pfx=lambda w, output: pfx(output.projected_scores, ".sscore"),
         in_pfx_1000g=lambda w, input: pfx(input.pgen_1000g, ".pgen"),
-        out_pfx_1000g=lambda w, output: pfx(output.projected_1000g_scores, ".sscore")
-    log:
-        logs/"plink/pca_project.log"
-    container:
-        config['containers']['plink']
+        out_pfx_1000g=lambda w, output: pfx(output.projected_1000g_scores, ".sscore"),
     # conda:
     #     "../envs/plink.yaml"
     shell:
@@ -434,103 +450,112 @@ rule pca_project:
             --score {input.scores} 2 5 header-read no-mean-imputation variance-standardize \
             --score-col-nums 6-15 \
             --out {params.out_pfx_1000g}
-        cat {params.out_pfx_1000g}.log >> {log}
+        cat {params.out_pfx_1000g}.log >>{log}
         rm {params.out_pfx_1000g}.log
-       """
+        """
+
 
 rule pca_projection_assign:
     input:
-        projected_scores = out_dir/"pca_projection/final_subset_pruned_data_pcs.sscore",
-        projected_1000g_scores = out_dir/"pca_projection/subset_pruned_1000g_pcs_projected.sscore",
-        fam_1000g = out_dir/"common_snps/subset_1000g.psam",
-        psam = out_dir/"plink/plink.psam",
-        sexcheck = out_dir/"check_sex/check_sex.sexcheck.tsv"
+        projected_scores=out_dir / "pca_projection/final_subset_pruned_data_pcs.sscore",
+        projected_1000g_scores=out_dir
+        / "pca_projection/subset_pruned_1000g_pcs_projected.sscore",
+        fam_1000g=out_dir / "common_snps/subset_1000g.psam",
+        psam=out_dir / "plink/plink.psam",
+        sexcheck=out_dir / "check_sex/check_sex.sexcheck.tsv",
     output:
-        sexcheck=temp(out_dir/"pca_sex_checks/check_sex_update_remove.tsv"),
-        anc_check=temp(out_dir/"pca_sex_checks/ancestry_update_remove.tsv"),
-        plot=out_dir/"pca_sex_checks/Ancestry_PCAs.png"
-    container:
-        config['containers']['r']
+        sexcheck=temp(out_dir / "pca_sex_checks/check_sex_update_remove.tsv"),
+        anc_check=temp(out_dir / "pca_sex_checks/ancestry_update_remove.tsv"),
+        plot=out_dir / "pca_sex_checks/Ancestry_PCAs.png",
     # conda:
     #     "../envs/r.yaml"
     log:
-        logs/"pca_projection_assign.log"
+        logs / "pca_projection_assign.log",
+    container:
+        config["containers"]["r"]
     script:
         "../scripts/PCA_Projection_Plotting.R"
 
+
 rule separate_indivs:
     input:
-        sexcheck=out_dir/"pca_sex_checks/check_sex_update_remove.tsv",
-        anc_check=out_dir/"pca_sex_checks/ancestry_update_remove.tsv",
-        king_remove=rules.relatedness_check.output.remove_id
+        sexcheck=out_dir / "pca_sex_checks/check_sex_update_remove.tsv",
+        anc_check=out_dir / "pca_sex_checks/ancestry_update_remove.tsv",
+        king_remove=rules.relatedness_check.output.remove_id,
     output:
-        update_sex=temp(out_dir/"separate_indivs/sex_update_indivs.tsv"),
-        remove_indiv=temp(out_dir/"separate_indivs/remove_indivs.tsv"),
-        remove_indiv_temp=temp(out_dir/"separate_indivs/remove_indivs_temp.tsv")
+        update_sex=temp(out_dir / "separate_indivs/sex_update_indivs.tsv"),
+        remove_indiv=temp(out_dir / "separate_indivs/remove_indivs.tsv"),
+        remove_indiv_temp=temp(out_dir / "separate_indivs/remove_indivs_temp.tsv"),
     log:
-        logs/"plink/separate_indivs.log"
+        logs / "plink/separate_indivs.log",
     container:
-        config['containers']['plink']
+        config["containers"]["plink"]
     # conda:
     #     "../envs/plink.yaml"
     shell:
         """
-        exec > {log} 2>&1
+        exec >{log} 2>&1
         grep "UPDATE" {input.sexcheck} \
             | awk 'BEGIN{{FS=OFS="\t"}}{{print($1,$2,$4)}}' \
-            | sed 's/SNPSEX/SEX/g'\
-            > {output.update_sex}
+            | sed 's/SNPSEX/SEX/g' \
+                >{output.update_sex}
         grep "REMOVE" {input.sexcheck} \
-            | awk 'BEGIN{{FS=OFS="\t"}}{{print($1,$2)}}'\
-            > {output.remove_indiv_temp}
+            | awk 'BEGIN{{FS=OFS="\t"}}{{print($1,$2)}}' \
+                >{output.remove_indiv_temp}
         grep "REMOVE" {input.anc_check} \
             | awk 'BEGIN{{FS=OFS="\t"}}{{print($1,$2)}}' \
-            >> {output.remove_indiv_temp}
+                >>{output.remove_indiv_temp}
         tail -n +2 {input.king_remove} \
-            >> {output.remove_indiv_temp}
-        sort -u {output.remove_indiv_temp} > {output.remove_indiv}
+            >>{output.remove_indiv_temp}
+        sort -u {output.remove_indiv_temp} >{output.remove_indiv}
         """
+
 
 # This rule updates the psam file to include ancestry
 rule update_psam:
     input:
-        ancestry=out_dir/"pca_sex_checks/ancestry_update_remove.tsv",
-        sex=out_dir/"pca_sex_checks/check_sex_update_remove.tsv",
-        psam=out_dir/"indiv_missingness/indiv_missingness.psam"
+        ancestry=out_dir / "pca_sex_checks/ancestry_update_remove.tsv",
+        sex=out_dir / "pca_sex_checks/check_sex_update_remove.tsv",
+        psam=out_dir / "indiv_missingness/indiv_missingness.psam",
     output:
-        anc_updated_psam=temp(out_dir/"pca_sex_checks/updated_psam.psam")
+        anc_updated_psam=temp(out_dir / "pca_sex_checks/updated_psam.psam"),
     log:
-        logs/"update_psam.log"
+        logs / "update_psam.log",
     run:
         # Read input files
         ancestry_check = pd.read_csv(input.ancestry, sep="\t")
         psam_df_local = pd.read_csv(input.psam, sep="\t")
         # Filter the ancestry check for individuals to be updated
-        ancestry_updates = ancestry_check[ancestry_check["UPDATE/REMOVE/KEEP"] == "UPDATE"]
+        ancestry_updates = ancestry_check[
+            ancestry_check["UPDATE/REMOVE/KEEP"] == "UPDATE"
+        ]
         # Merge the PSAM DataFrame with the ancestry updates based on 'IID'
         updated_psam = psam_df_local.merge(
-            ancestry_updates[["IID", "PCA_Assignment"]],
-            on="IID",
-            how="left"
+            ancestry_updates[["IID", "PCA_Assignment"]], on="IID", how="left"
         )
         # Update 'Provided_Ancestry' where ancestry updates are available
-        updated_psam["Provided_Ancestry"] = updated_psam["PCA_Assignment"].combine_first(updated_psam["Provided_Ancestry"])
+        updated_psam["Provided_Ancestry"] = updated_psam[
+            "PCA_Assignment"
+        ].combine_first(updated_psam["Provided_Ancestry"])
         # Drop the 'PCA_Assignment' column used for the merge
         updated_psam.drop(columns=["PCA_Assignment"], inplace=True)
         # Write updated PSAM to output file
-        updated_psam.to_csv(output.anc_updated_psam, sep="\t", na_rep="NA", index=False)
+        updated_psam.to_csv(
+            output.anc_updated_psam, sep="\t", na_rep="NA", index=False
+        )
+
 
 rule prepare_update:
     input:
-        pgen=out_dir/"indiv_missingness/indiv_missingness.pgen",
-        pvar=out_dir/"indiv_missingness/indiv_missingness.pvar",
-        anc_updated_psam=out_dir/"pca_sex_checks/updated_psam.psam"
+        pgen=out_dir / "indiv_missingness/indiv_missingness.pgen",
+        pvar=out_dir / "indiv_missingness/indiv_missingness.pvar",
+        anc_updated_psam=out_dir / "pca_sex_checks/updated_psam.psam",
     output:
-        pgen=temp(out_dir/"update_prep/update_prep.pgen"),
-        pvar=temp(out_dir/"update_prep/update_prep.pvar"),
-        psam=temp(out_dir/"update_prep/update_prep.psam")
+        pgen=temp(out_dir / "update_prep/update_prep.pgen"),
+        pvar=temp(out_dir / "update_prep/update_prep.pvar"),
+        psam=temp(out_dir / "update_prep/update_prep.psam"),
     log:
-        logs/"prepare_update.log"
+        logs / "prepare_update.log",
     shell:
         """
         cp {input.pgen} {output.pgen}
@@ -538,24 +563,25 @@ rule prepare_update:
         cp {input.anc_updated_psam} {output.psam}
         """
 
+
 rule update_sex_ancestry:
     input:
-        pgen=out_dir/"update_prep/update_prep.pgen",
-        pvar=out_dir/"update_prep/update_prep.pvar",
-        psam=out_dir/"update_prep/update_prep.psam",
-        update_sex=out_dir/"separate_indivs/sex_update_indivs.tsv",
-        remove_indiv=out_dir/"separate_indivs/remove_indivs.tsv",
+        pgen=out_dir / "update_prep/update_prep.pgen",
+        pvar=out_dir / "update_prep/update_prep.pvar",
+        psam=out_dir / "update_prep/update_prep.psam",
+        update_sex=out_dir / "separate_indivs/sex_update_indivs.tsv",
+        remove_indiv=out_dir / "separate_indivs/remove_indivs.tsv",
     output:
-        pgen=final/"post_qc.pgen",
-        pvar=final/"post_qc.pvar",
-        psam=final/"post_qc.psam"
+        pgen=final / "post_qc.pgen",
+        pvar=final / "post_qc.pvar",
+        psam=final / "post_qc.psam",
+    log:
+        logs / "update_sex_ancestry.log",
+    container:
+        config["containers"]["plink"]
     params:
         in_pfx=lambda w, input: pfx(input.pgen, ".pgen"),
-        out_pfx=lambda w, output: pfx(output.pgen, ".pgen")
-    log:
-        logs/"update_sex_ancestry.log"
-    container:
-        config['containers']['plink']
+        out_pfx=lambda w, output: pfx(output.pgen, ".pgen"),
     # conda:
     #     "../envs/plink.yaml"
     shell:
@@ -569,23 +595,21 @@ rule update_sex_ancestry:
         mv {params.out_pfx}.log {log}
         """
 
+
 rule export_sample_metadata:
     input:
-        psam=final/"post_qc.psam"
+        psam=final / "post_qc.psam",
     output:
-        csv=metadata_csv
+        csv=metadata_csv,
     log:
-        logs/"export_sample_metadata.log"
+        logs / "export_sample_metadata.log",
     run:
         psam_df = pd.read_csv(input.psam, sep="\t", dtype=str)
-
         # Select relevant columns
         df = psam_df[["IID", "SEX", "Provided_Ancestry"]].copy()
-
         # Map sex codes to labels
         sex_map = {"1": "Male", "2": "Female"}
         df["SEX"] = df["SEX"].map(sex_map).fillna("Unknown")
-
         # HANCESTRO sample-level inferred ancestry
         ancestry_map = {
             "EUR": "European ancestry",
@@ -601,7 +625,6 @@ rule export_sample_metadata:
             "SAS": "HANCESTRO:0006",
             "AMR": "HANCESTRO:0014",
         }
-
         # HANCESTRO 1KGP reference superpopulation (provenance)
         ref_superpop_id_map = {
             "EUR": "HANCESTRO:2003",
@@ -610,16 +633,23 @@ rule export_sample_metadata:
             "SAS": "HANCESTRO:2004",
             "AMR": "HANCESTRO:2001",
         }
-
         raw_anc = df["Provided_Ancestry"]
         df["ancestry"] = raw_anc.map(ancestry_map)
         df["ancestry_id"] = raw_anc.map(ancestry_id_map)
-        df["reference_superpopulation"] = raw_anc.where(raw_anc.isin(ref_superpop_id_map), other=raw_anc)
+        df["reference_superpopulation"] = raw_anc.where(
+            raw_anc.isin(ref_superpop_id_map), other=raw_anc
+        )
         df["reference_superpopulation_id"] = raw_anc.map(ref_superpop_id_map)
-
         # Rename and select final columns
         df = df.rename(columns={"IID": "gussid", "SEX": "sex"})
-        df = df[["gussid", "sex", "ancestry", "ancestry_id", "reference_superpopulation", "reference_superpopulation_id"]]
-
+        df = df[
+            [
+                "gussid",
+                "sex",
+                "ancestry",
+                "ancestry_id",
+                "reference_superpopulation",
+                "reference_superpopulation_id",
+            ]
+        ]
         df.to_csv(output.csv, index=False)
-
