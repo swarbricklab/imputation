@@ -12,12 +12,12 @@ containers:
   bcftools_biocontainer: docker://quay.io/biocontainers/bcftools:1.21--h8b25389_0
 
 deps:
-  input_vcf: test/data/test.hg38.vcf.gz
-  post_qc_plink: test/results/post_qc
-  id_map: test/data/id_map.tsv
+  input_vcf: .tests/integration/data/test.hg38.vcf.gz
+  post_qc_plink: .tests/integration/results/post_qc
+  id_map: .tests/integration/data/id_map.tsv
 
 outs:
-  results: test/results/imputation
+  results: .tests/integration/results/imputation
   logs: logs/imputation/imputation
 
 refs:

@@ -1,2 +1,2 @@
 # Only setup_placeholders.sh is tracked here; placeholders live under
-# resources/ and test/ (covered by the repo .gitignore / DVC).
+# resources/ and .tests/integration/ (covered by the repo .gitignore / DVC).
