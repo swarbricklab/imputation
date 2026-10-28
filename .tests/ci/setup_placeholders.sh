@@ -5,21 +5,21 @@ set -eu
 mk() { mkdir -p "$(dirname "$1")"; : > "$1"; }
 
 # --- QC leaf inputs ---
-mk test/data/test.hg19.vcf.gz
-mk test/data/test.psam
-mk test/data/id_map.tsv
+mk .tests/integration/data/test.hg19.vcf.gz
+mk .tests/integration/data/test.psam
+mk .tests/integration/data/id_map.tsv
 mk resources/1000g/all_phase3_filtered.pgen
 mk resources/1000g/all_phase3_filtered.pvar
 mk resources/1000g/all_phase3_filtered.psam
 
 # --- imputation leaf inputs ---
-mk test/data/test.hg38.vcf.gz
+mk .tests/integration/data/test.hg38.vcf.gz
 # post_qc.psam is read at PARSE time for the Provided_Ancestry column -> real content
-mkdir -p test/results/post_qc
+mkdir -p .tests/integration/results/post_qc
 printf '#FID\tIID\tPAT\tMAT\tSEX\tProvided_Ancestry\n0\tS1\t0\t0\t1\tEUR\n0\tS2\t0\t0\t2\tAFR\n' \
-    > test/results/post_qc/post_qc.psam
-mk test/results/post_qc/post_qc.pgen
-mk test/results/post_qc/post_qc.pvar
+    > .tests/integration/results/post_qc/post_qc.psam
+mk .tests/integration/results/post_qc/post_qc.pgen
+mk .tests/integration/results/post_qc/post_qc.pvar
 mk resources/genomes/hg38/ref_panel_QC/30x-GRCh38_NoSamplesSorted.vcf.gz
 mk resources/genomes/hg38/ref_panel_QC/30x-GRCh38_NoSamplesSorted.vcf.gz.tbi
 mk resources/genomes/hg38/ref_genome_QC/Homo_sapiens.GRCh38.dna.primary_assembly.fa
